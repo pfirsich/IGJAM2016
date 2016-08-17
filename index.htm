@@ -232,11 +232,13 @@
 				} );
 				player.mesh = new THREE.Mesh(player.geometry, player.material);
 				player.velocity = new THREE.Vector3(0.0, 0.0, -1.0);
-				player.speed = 1000.0;
-				player.accel = 1000.0;
+				player.speed = 2000.0;
+				player.accel = player.speed;
+				player.cameraMinDistance = 50.0;
 				player.cameraDistance = 1000.0;
 				player.cameraApproachSpeed = 1.0;
-				player.focusPointDistance = 1000.0;
+				player.focusPointDistance = player.speed;
+				player.focusPointMaxDistance = player.speed * 5.0;
 				player.velocity.multiplyScalar(player.speed);
 				scene.add(player.mesh);
 
@@ -302,14 +304,23 @@
 				player.mesh.position = player.mesh.position.add(velDt);
 			}
 
+			function lerp(a, b, t) {
+				return a * (1 - t) + b * t;
+			}
+
 			function updateCamera(dt) {
+				var playerVelocity = player.velocity.clone();
+				playerVelocity.normalize();
+				var angleDist = Math.max(0, camera.getWorldDirection().dot(playerVelocity));
+
 				var playerPos = player.mesh.position.clone();
 				var rel = playerPos.sub(camera.position);
-				rel.setLength((rel.length() - player.cameraDistance) * player.cameraApproachSpeed);
+				var targetDistance = lerp(player.cameraMinDistance, player.cameraDistance, angleDist);
+				rel.setLength((rel.length() - targetDistance));
 				camera.position.add(rel);
 
 				var focusPoint = player.velocity.clone();
-				focusPoint.setLength(player.focusPointDistance);
+				focusPoint.setLength(lerp(player.focusPointMaxDistance, player.focusPointDistance, angleDist));
 				focusPoint.add(player.mesh.position);
 				camera.lookAt(focusPoint);
 			}
