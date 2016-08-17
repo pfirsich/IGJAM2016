@@ -231,10 +231,12 @@
 					shading: THREE.FlatShading
 				} );
 				player.mesh = new THREE.Mesh(player.geometry, player.material);
-				player.velocity = new THREE.Vector3(0.0, 0.0, -1.0)
+				player.velocity = new THREE.Vector3(0.0, 0.0, -1.0);
 				player.speed = 1000.0;
 				player.accel = 1000.0;
 				player.cameraDistance = 1000.0;
+				player.cameraApproachSpeed = 1.0;
+				player.focusPointDistance = 1000.0;
 				player.velocity.multiplyScalar(player.speed);
 				scene.add(player.mesh);
 
@@ -286,7 +288,10 @@
 				player.up.crossVectors(direction, player.right);
 
 				var rotMat = new THREE.Matrix4().makeBasis(player.right, player.up, direction);
-				player.mesh.quaternion = new THREE.Quaternion().setFromRotationMatrix(rotMat);
+				var rotQuat = new THREE.Quaternion().setFromRotationMatrix(rotMat);
+				rotQuat.normalize();
+
+				player.mesh.setRotationFromQuaternion(rotQuat);
 				move.applyMatrix4(rotMat);
 
 				player.velocity.add(move);
@@ -300,9 +305,13 @@
 			function updateCamera(dt) {
 				var playerPos = player.mesh.position.clone();
 				var rel = playerPos.sub(camera.position);
-				rel.setLength(Math.max(rel.length() - player.cameraDistance, 0));
+				rel.setLength((rel.length() - player.cameraDistance) * player.cameraApproachSpeed);
 				camera.position.add(rel);
-				camera.lookAt(player.mesh.position);
+
+				var focusPoint = player.velocity.clone();
+				focusPoint.setLength(player.focusPointDistance);
+				focusPoint.add(player.mesh.position);
+				camera.lookAt(focusPoint);
 			}
 
 			function animate() {
