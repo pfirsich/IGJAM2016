@@ -55,11 +55,21 @@
 
 			var container, stats;
 
-			var camera, controls, scene, renderer, player;
+			var camera, controls, scene, renderer;
 
-			var mesh, texture;
+			var player;
+			var maxBullets = 250, nextBulletIndex = 0, bullets = new Array(maxBullets);
+			var bulletGeometry = new THREE.BoxGeometry(40, 40, 100);
+			var bulletMaterial = new THREE.MeshPhongMaterial( {
+					color: 0xffff00,
+					emissive: 0xffff00,
+					side: THREE.DoubleSide,
+					shading: THREE.FlatShading
+				} );;
 
-			var worldWidth = 256, worldDepth = 256,
+			var terrain;
+
+			var worldWidth = 1024, worldDepth = 1024,
 			worldHalfWidth = worldWidth / 2, worldHalfDepth = worldDepth / 2;
 
 			var clock = new THREE.Clock();
@@ -71,7 +81,7 @@
 				this.height = height;
 				this.widthSegments = widthSegments;
 				this.heightSegments = heightSegments;
-				this.dataToUnitConversion = 5;
+				this.dataToUnitConversion = 10;
 
 				this.data = this.generateHeight(widthSegments + 1, heightSegments + 1);
 
@@ -91,9 +101,9 @@
 
 			Terrain.prototype.generateHeight = function(width, height) {
 				var size = width * height, data = new Uint8Array( size ),
-				perlin = new ImprovedNoise(), quality = 1, z = Math.random() * 100;
+				perlin = new ImprovedNoise(), quality = 100, z = Math.random() * 100;
 
-				for ( var j = 0; j < 4; j ++ ) {
+				for ( var j = 0; j < 1; j ++ ) {
 
 					for ( var i = 0; i < size; i ++ ) {
 
@@ -201,11 +211,67 @@
 			function KeyboardController(left, right, up, down) {
 				this.moveX = Input.getAxisInputFromKeyboard(left, right);
 				this.moveY = Input.getAxisInputFromKeyboard(up, down);
+				this.shoot = new Input(function() {return keyboard.pressed("a") ? 1.0 : 0.0});
 			}
 
 			KeyboardController.prototype.update = function() {
 				this.moveX.update();
 				this.moveY.update();
+				this.shoot.update();
+			}
+
+			function alignAlongVector(mesh, vec) {
+				var dir = vec.clone();
+				dir.normalize();
+				var worldUp = new THREE.Vector3(0, 1, 0);
+
+				var right = new THREE.Vector3();
+				right.crossVectors(dir, worldUp);
+
+				var up = new THREE.Vector3();
+				up.crossVectors(dir, right);
+
+				var rotMat = new THREE.Matrix4().makeBasis(right, up, dir);
+				var rotQuat = new THREE.Quaternion().setFromRotationMatrix(rotMat);
+				rotQuat.normalize();
+
+				mesh.setRotationFromQuaternion(rotQuat);
+
+				return rotMat;
+			}
+
+			function spawnBullet(position, direction) {
+				var bullet = new Object();
+				bullet.lifetime = 5.0;
+				bullet.velocity = direction.clone();
+				bullet.velocity.normalize();
+				bullet.velocity.multiplyScalar(30000.0);
+				bullet.mesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
+				scene.add(bullet.mesh);
+				bullet.mesh.position.copy(position);
+				alignAlongVector(bullet.mesh, direction);
+				bullet.alive = true;
+				bullets[nextBulletIndex] = bullet;
+				nextBulletIndex++;
+			}
+
+			function updateBullets(dt) {
+				for (var i = 0; i < maxBullets; ++i) {
+					var bullet = bullets[i];
+					if (bullet != undefined && bullet.alive) {
+						bullet.lifetime -= dt;
+						if (bullet.lifetime <= 0) {
+							bullet.alive = false;
+							scene.remove(bullet.mesh);
+						} else {
+							var deltaPos = bullet.velocity.clone();
+							deltaPos.multiplyScalar(dt);
+							bullet.mesh.position.add(deltaPos);
+
+							// check collisions
+						}
+					}
+				}
 			}
 
 			init();
@@ -218,7 +284,7 @@
 
 				scene = new THREE.Scene();
 
-				var terrain = new Terrain(20000, 20000, worldWidth - 1, worldDepth - 1);
+				terrain = new Terrain(30000, 30000, worldWidth - 1, worldDepth - 1);
 				scene.add(terrain.mesh);
 
 				player = new Object();
@@ -240,6 +306,9 @@
 				player.focusPointDistance = player.speed;
 				player.focusPointMaxDistance = player.speed * 5.0;
 				player.velocity.multiplyScalar(player.speed);
+				player.nextShot = clock.getElapsedTime();
+				player.shotInterval = 0.2;
+				player.radius = 100.0;
 				scene.add(player.mesh);
 
 				player.controller = new KeyboardController("left", "right", "up", "down");
@@ -250,6 +319,7 @@
 				camera.position.z = 1000;
 				camera.position.y = terrain.getHeight(camera.position.x, camera.position.z) + 500;
 				camera.lookAt(player.mesh.position);
+				camera.terrainOffset = 60;
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setClearColor( 0xbfd1e5 );
@@ -276,25 +346,18 @@
 			function updatePlayer(dt) {
 				player.controller.update();
 
+				var rotMat = alignAlongVector(player.mesh, player.velocity);
+
 				var move = new THREE.Vector3(-player.controller.moveX.state, -player.controller.moveY.state, 0);
 				move.multiplyScalar(player.accel);
 				move.multiplyScalar(dt);
-
-				var direction = player.velocity.clone();
-				direction.normalize();
-
-				player.right = new THREE.Vector3();
-				player.right.crossVectors(direction, new THREE.Vector3(0, 1, 0));
-
-				player.up = new THREE.Vector3();
-				player.up.crossVectors(direction, player.right);
-
-				var rotMat = new THREE.Matrix4().makeBasis(player.right, player.up, direction);
-				var rotQuat = new THREE.Quaternion().setFromRotationMatrix(rotMat);
-				rotQuat.normalize();
-
-				player.mesh.setRotationFromQuaternion(rotQuat);
 				move.applyMatrix4(rotMat);
+
+				var terrainHeight = terrain.getHeight(player.mesh.position.x, player.mesh.position.z);
+				if (player.mesh.position.y < terrainHeight) {
+					player.mesh.position.setY(terrainHeight);
+					player.velocity.add(new THREE.Vector3(0, 200, 0));
+				}
 
 				player.velocity.add(move);
 				player.velocity.setLength(player.speed);
@@ -302,6 +365,13 @@
 				var velDt = player.velocity.clone();
 				velDt.multiplyScalar(dt);
 				player.mesh.position = player.mesh.position.add(velDt);
+
+				if (player.controller.shoot.state > 0) {
+					if (player.nextShot < clock.getElapsedTime()) {
+						player.nextShot = clock.getElapsedTime() + player.shotInterval;
+						spawnBullet(player.mesh.position, player.velocity);
+					}
+				}
 			}
 
 			function lerp(a, b, t) {
@@ -319,6 +389,11 @@
 				rel.setLength((rel.length() - targetDistance));
 				camera.position.add(rel);
 
+				var terrainHeight = terrain.getHeight(camera.position.x, camera.position.z);
+				if (camera.position.y < terrainHeight) {
+					camera.position.y = terrainHeight + camera.terrainOffset;
+				}
+
 				var focusPoint = player.velocity.clone();
 				focusPoint.setLength(lerp(player.focusPointMaxDistance, player.focusPointDistance, angleDist));
 				focusPoint.add(player.mesh.position);
@@ -330,6 +405,7 @@
 
 				var dt = clock.getDelta();
 
+				updateBullets(dt);
 				updatePlayer(dt);
 				updateCamera(dt);
 
