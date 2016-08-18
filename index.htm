@@ -58,7 +58,7 @@
 
 			var player;
 			var maxBullets = 2500, nextBulletIndex = 0, bullets = new Array(maxBullets);
-			var bulletGeometry = new THREE.BoxGeometry(40, 40, 100);
+			var bulletGeometry = new THREE.BoxGeometry(40, 40, 150);
 			var bulletMaterial = new THREE.MeshPhongMaterial( {
 					color: 0xffff00,
 					emissive: 0xffff00,
@@ -188,10 +188,10 @@
 				player.nextShot = clock.getElapsedTime();
 				player.shotInterval = 0.15;
 				player.nextTrail = clock.getElapsedTime();
-				player.trailInterval = 0.15;
+				player.trailInterval = 0.05;
 				player.cameraModifier = 0.0;
 				scene.add(player.mesh);
-				player.speed = 30.0;
+				//player.speed = 30.0;
 
 				player.controller = new KeyboardController("left", "right", "up", "down");
 
@@ -210,7 +210,7 @@
 				light.shadow.mapHeight = 8192;
 				scene.add(light);
 
-				scene.add(new THREE.CameraHelper(light.shadow.camera));
+				//scene.add(new THREE.CameraHelper(light.shadow.camera));
 
 				camera.position.x = 0;
 				camera.position.z = 1000;
