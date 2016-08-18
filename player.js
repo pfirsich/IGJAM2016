@@ -106,6 +106,10 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.ammoRecharge = 3.0; //per second
     this.ammoMax = 12;
     this.shotInterval = 0.15;
+    
+    //engine
+    this.engineSoundId = sounds.engine.play();
+    
 }
 
 Player.prototype.applyGeometryWhenReady = function() {
@@ -138,6 +142,8 @@ Player.prototype.update = function(dt) {
     if (this.mesh.position.y < terrainHeight) {
         this.mesh.position.setY(terrainHeight);
         this.velocity.add(new THREE.Vector3(0, 200, 0));
+        
+        [sounds.ground1, sounds.ground2, sounds.ground3][Math.floor(Math.random()*3)].play();
     }
 
     if (Math.abs(this.controller.accelerate.state) > 0.1) {
@@ -172,7 +178,11 @@ Player.prototype.update = function(dt) {
             
             sounds.shoot2.play();
         }
-    }
+    } /*else {
+        this.ammo += dt * this.ammoRecharge;
+        if (this.ammo > this.ammoMax)
+            this.ammo = this.ammoMax;
+    }*/
 
     if (this.nextTrail < clock.getElapsedTime()) {
         this.nextTrail = clock.getElapsedTime() + this.trailInterval;
@@ -203,6 +213,9 @@ Player.prototype.update = function(dt) {
     var terrainHeight = terrain.getHeight(this.camera.position.x, this.camera.position.z);
     if (this.camera.position.y < terrainHeight) {
         this.camera.position.y = terrainHeight + this.camera.terrainOffset;
+        
+        //[sounds.ground1, sounds.ground2, sounds.ground3][Math.floor(Math.random() * 3)].play(); // :D
+        //console.log([1, 2, 3][Math.floor(Math.random() * 3)]);
     }
 
     // adjust lookat
@@ -225,6 +238,10 @@ Player.prototype.update = function(dt) {
 
     crosshairPos = this.mesh.position.clone().add(vel.setLength(crosshairDist*3.0));
     this.crosshairMeshFar.position.copy(this.projectToScreen(crosshairPos));
+    
+    //engine sound
+    //console.log(sounds.engine);
+    sounds.engine.volume(0.5 + 0.5 * this.cameraModifier, this.engineSoundId);
 }
 
 // dependent on player viewport!

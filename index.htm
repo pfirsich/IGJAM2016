@@ -102,7 +102,8 @@
                 ground2: new Howl({src: ["sounds/Team8a_DamageWithGround02.wav"]}),
                 ground3: new Howl({src: ["sounds/Team8a_DamageWithGround03.wav"]}),
                 explosion: new Howl({src: ["sounds/Team8a_Explosion.wav"]}),
-                engine: new Howl({src: ["sounds/Team8a_PlaneEngine_Loop.wav"]}),
+                engine: new Howl({src: ["sounds/Team8a_PlaneEngine_Loop.wav"],
+                                 loop: true}),
                 shoot1: new Howl({src: ["sounds/Team8a_Shoot.wav"]}),
                 shoot2: new Howl({src: ["sounds/Team8a_Shoot_var_01.wav"]})
             };
@@ -179,7 +180,7 @@
 			init();
 			animate();
 
-			function init() {
+			function init() {                
 				container = document.getElementById( 'container' );
 
 				scene = new THREE.Scene();
