@@ -62,7 +62,11 @@
 					color: 0xffff00,
 					emissive: 0xffff00,
 					shading: THREE.FlatShading
-				} );
+				});
+			var trailMaterial = new THREE.MeshBasicMaterial( {
+					color: 0x156289,
+					emissive: 0x072534,
+				});
 
 			var crosshairMeshNear, crosshairMeshFar;
 
@@ -78,12 +82,14 @@
 			var sunDir = new THREE.Vector3(0.6, 1, 0.6);
 			sunDir.normalize();
 
+			var texLoader = new THREE.TextureLoader();
+
 			function Terrain(width, height, widthSegments, heightSegments) {
 				this.width = width;
 				this.height = height;
 				this.widthSegments = widthSegments;
 				this.heightSegments = heightSegments;
-				this.dataToUnitConversion = 10;
+				this.dataToUnitConversion = 60;
 
 				this.data = this.generateHeight(widthSegments + 1, heightSegments + 1);
 
@@ -96,11 +102,6 @@
 				this.geometry.computeFaceNormals();
 				this.geometry.computeVertexNormals();
 
-				this.texture = new THREE.CanvasTexture( this.generateTexture( this.data, worldWidth, worldDepth ) );
-				this.texture.wrapS = THREE.ClampToEdgeWrapping;
-				this.texture.wrapT = THREE.ClampToEdgeWrapping;
-
-				//this.material = new THREE.MeshBasicMaterial( { map: this.texture } );
 				this.material = new THREE.MeshLambertMaterial({
 					color: 0xe68a00,
 					shading: THREE.SmoothShading
@@ -113,80 +114,19 @@
 			Terrain.prototype.generateHeight = function(width, height) {
 				var size = width * height, data = new Uint8Array( size ),
 				perlin = new ImprovedNoise(), quality = 50, z = Math.random() * 100;
+				var qualities = [{freq: 50, amp: 0.85, negativeExp: 0.5}, {freq: 20, amp: 0.15, negativeExp: 1.0}];
 
-				for ( var j = 0; j < 1; j ++ ) {
-					for ( var i = 0; i < size; i ++ ) {
-						var x = i % width, y = ~~ ( i / width );
-						data[ i ] += Math.abs( perlin.noise( x / quality, y / quality, z ) * quality * 10.75 );
+				for (var j = 0; j < qualities.length; j++) {
+					for (var i = 0; i < size; i++) {
+						var x = i % width, y = ~~ (i / width);
+						var noise = perlin.noise(x / qualities[j].freq, y / qualities[j].freq, z);
+						if (noise < 0.0) noise = -Math.pow(-noise, qualities[j].negativeExp);
+						noise = (noise + 1.0) * 0.5;
+						data[i] += noise * qualities[j].amp * 255;
 					}
-					quality *= 5;
 				}
 
 				return data;
-			}
-
-			Terrain.prototype.generateTexture = function(data, width, height) {
-				var canvas, canvasScaled, context, image, imageData,
-				level, diff, vector3, sun, shade;
-
-				vector3 = new THREE.Vector3( 0, 0, 0 );
-
-				sun = new THREE.Vector3( 1, 1, 1 );
-				sun.normalize();
-
-				canvas = document.createElement( 'canvas' );
-				canvas.width = width;
-				canvas.height = height;
-
-				context = canvas.getContext( '2d' );
-				context.fillStyle = '#000';
-				context.fillRect( 0, 0, width, height );
-
-				image = context.getImageData( 0, 0, canvas.width, canvas.height );
-				imageData = image.data;
-
-				for ( var i = 0, j = 0, l = imageData.length; i < l; i += 4, j ++ ) {
-
-					vector3.x = data[ j - 2 ] - data[ j + 2 ];
-					vector3.y = 2;
-					vector3.z = data[ j - width * 2 ] - data[ j + width * 2 ];
-					vector3.normalize();
-
-					shade = vector3.dot( sun );
-
-					imageData[ i ] = ( 96 + shade * 128 ) * ( 0.5 + data[ j ] * 0.007 );
-					imageData[ i + 1 ] = ( 32 + shade * 96 ) * ( 0.5 + data[ j ] * 0.007 );
-					imageData[ i + 2 ] = ( shade * 96 ) * ( 0.5 + data[ j ] * 0.007 );
-				}
-
-				context.putImageData( image, 0, 0 );
-
-				// Scaled 4x
-
-				canvasScaled = document.createElement( 'canvas' );
-				canvasScaled.width = width * 4;
-				canvasScaled.height = height * 4;
-
-				context = canvasScaled.getContext( '2d' );
-				context.scale( 4, 4 );
-				context.drawImage( canvas, 0, 0 );
-
-				image = context.getImageData( 0, 0, canvasScaled.width, canvasScaled.height );
-				imageData = image.data;
-
-				for ( var i = 0, l = imageData.length; i < l; i += 4 ) {
-
-					var v = ~~ ( Math.random() * 5 );
-
-					imageData[ i ] += v;
-					imageData[ i + 1 ] += v;
-					imageData[ i + 2 ] += v;
-
-				}
-
-				context.putImageData( image, 0, 0 );
-
-				return canvasScaled;
 			}
 
 			Terrain.prototype.getHeight = function(x, y) {
@@ -254,7 +194,7 @@
 				if (stand == true) {
 					bullet.velocity.set(0, 0, 0);
 				}
-				bullet.velocity.multiplyScalar(30000.0);
+				bullet.velocity.multiplyScalar(50000.0);
 				bullet.mesh = new THREE.Mesh(bulletGeometry, material);
 				scene.add(bullet.mesh);
 				bullet.mesh.castShadow = true;
@@ -315,17 +255,18 @@
 				player.velocity = new THREE.Vector3(0.0, 0.0, -1.0);
 				player.speed = 2000.0;
 				player.radius = 100.0;
-				player.accel = player.speed;
-				player.cameraMinDistance = 50.0;
-				player.cameraDistance = 1000.0;
+				player.accel = player.speed * 1.5;
+				player.cameraMinDistance = player.radius * 7.0;
+				player.cameraDistance = player.radius * 10.0;
 				player.cameraApproachSpeed = 1.0;
 				player.focusPointDistance = player.speed;
-				player.focusPointMaxDistance = player.speed * 5.0;
+				player.focusPointMaxDistance = player.speed * 10.0;
 				player.velocity.multiplyScalar(player.speed);
 				player.nextShot = clock.getElapsedTime();
 				player.shotInterval = 0.15;
 				player.nextTrail = clock.getElapsedTime();
 				player.trailInterval = 0.15;
+				player.cameraModifier = 0.0;
 				scene.add(player.mesh);
 
 				player.controller = new KeyboardController("left", "right", "up", "down");
@@ -355,10 +296,19 @@
 				camera.playerHeightOffset = player.radius;
 
 				// ui scene
-				var crosshairMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 } );
+				var crosshairMaterial = new THREE.MeshBasicMaterial({
+					color: 0x00ff00,
+					side: THREE.DoubleSide,
+					transparent: true,
+					opacity: 0.5,
+					map: texLoader.load("crosshair.png")
+				});
 				var crosshairGeometry = new THREE.PlaneGeometry(50, 50, 1, 1);
-				crosshairMesh = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
-				hudScene.add(crosshairMesh);
+				crosshairMeshNear = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
+				crosshairMeshFar = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
+				crosshairMeshFar.scale.set(0.5, 0.5, 0.5);
+				hudScene.add(crosshairMeshNear);
+				hudScene.add(crosshairMeshFar);
 
 				renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true});
 				renderer.setClearColor( 0xbfd1e5 );
@@ -422,7 +372,15 @@
 
 				if (player.nextTrail < clock.getElapsedTime()) {
 					player.nextTrail = clock.getElapsedTime() + player.trailInterval;
-					spawnBullet(player.mesh.position, player.velocity, player.material, true);
+					spawnBullet(player.mesh.position, player.velocity, trailMaterial, true);
+				}
+
+				if (Math.abs(player.controller.moveX.state) > 0.1 || Math.abs(player.controller.moveY.state) > 0.1) {
+					player.cameraModifier += dt;
+					if (player.cameraModifier > 1.0) player.cameraModifier = 1.0;
+				} else {
+					player.cameraModifier -= dt;
+					if (player.cameraModifier < 0.0) player.cameraModifier = 0.0;
 				}
 			}
 
@@ -433,10 +391,12 @@
 			function updateCamera(dt) {
 				var playerVelocity = player.velocity.clone();
 				playerVelocity.normalize();
-				var angleDist = Math.pow(Math.max(0, camera.getWorldDirection().dot(playerVelocity)), 40.0);
+				//var angleDist = Math.pow(Math.max(0, camera.getWorldDirection().dot(playerVelocity)), 40.0);
+				angleDist = 1.0 - player.cameraModifier;
 
 				var playerPos = player.mesh.position.clone().add(new THREE.Vector3(0, angleDist * camera.playerHeightOffset, 0));
 				var rel = playerPos.sub(camera.position);
+				// Adjust target distance
 				var targetDistance = lerp(player.cameraMinDistance, player.cameraDistance, angleDist);
 				rel.setLength((rel.length() - targetDistance));
 				camera.position.add(rel);
@@ -446,6 +406,7 @@
 					camera.position.y = terrainHeight + camera.terrainOffset;
 				}
 
+				// adjust lookat
 				var focusPoint = player.velocity.clone();
 				focusPoint.setLength(lerp(player.focusPointMaxDistance, player.focusPointDistance, angleDist));
 				focusPoint.add(player.mesh.position);
@@ -457,13 +418,23 @@
 				light.position.copy(dir.add(light.target.position));
 			}
 
+			function projectToScreen(vec, camera) {
+				var projected = vec.clone().project(camera);
+				projected.multiply(new THREE.Vector3(1, -1, 0));
+				projected.add(new THREE.Vector3(1, 1, 0));
+				projected.multiply(new THREE.Vector3(window.innerWidth / 2.0, window.innerHeight / 2.0, 0));
+				return projected;
+			}
+
 			function updateUI(dt) {
-				var crosshairDelta = player.velocity.clone();
-				crosshairDelta.normalize();
-				crosshairDelta.multiplyScalar(player.speed * 3.0);
-				var crosshairPos = player.mesh.position.clone().add(crosshairDelta);
-				crosshairPos.project(camera);
-				crosshairMesh.position.copy(crosshairPos);
+				var vel = player.velocity.clone();
+				var crosshairDist = player.speed * 1.5;
+
+				var crosshairPos = player.mesh.position.clone().add(vel.setLength(crosshairDist));
+				crosshairMeshNear.position.copy(projectToScreen(crosshairPos, camera));
+
+				crosshairPos = player.mesh.position.clone().add(vel.setLength(crosshairDist*3.0));
+				crosshairMeshFar.position.copy(projectToScreen(crosshairPos, camera));
 			}
 
 			function animate() {
