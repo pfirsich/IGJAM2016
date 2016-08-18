@@ -51,15 +51,12 @@
 
 			var scene, renderer;
 
-			var maxBullets = 2500, nextBulletIndex = 0, bullets = new Array(maxBullets);
+			var maxBullets = 2048, nextBulletIndex = 0, bullets = new Array(maxBullets);
 			var bulletGeometry = new THREE.BoxGeometry(40, 40, 150);
 			var bulletMaterial = new THREE.MeshPhongMaterial( {
 					color: 0xffff00,
 					emissive: 0xffff00,
 					shading: THREE.FlatShading
-				});
-			var trailMaterial = new THREE.MeshBasicMaterial( {
-					color: 0x156289,
 				});
 
 			var terrain, light;
@@ -154,29 +151,29 @@
 				terrain = new Terrain(30000, 30000, worldWidth - 1, worldDepth - 1);
 				scene.add(terrain.mesh);
 
-				var player = new Player(1, 4, 0, new KeyboardController());
+				var player = new Player(1, 1, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);
 
-				player = new Player(2, 4, 1, new DummyController());
+				/*player = new Player(2, 4, 1, new KeyboardController());
 				player.mesh.position.set(2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);
 
-				player = new Player(3, 4, 2, new DummyController());
+				player = new Player(3, 4, 2, new KeyboardController());
 				player.mesh.position.set(-1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);
 
-				player = new Player(4, 4, 3, new DummyController());
+				player = new Player(4, 4, 3, new KeyboardController());
 				player.mesh.position.set(-2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);
+				scene.add(player.mesh);*/
 
 				light = new THREE.DirectionalLight(0xffe0b3);
 				light.castShadow = true;
@@ -244,17 +241,15 @@
 				renderer.setScissorTest(true);
 				for(var i = 0; i < players.length; ++i) {
 					var vp = players[i].viewport;
-					renderer.setScissor(vp.x, vp.y, vp.width, vp.height);
+					//renderer.setScissor(vp.x, vp.y, vp.width, vp.height);
 					renderer.setViewport(vp.x, vp.y, vp.width, vp.height);
 					renderer.render(scene, players[i].camera);
+					renderer.render(players[i].hudScene, players[i].hudCamera);
 				}
 				renderer.setScissorTest(false);
 
 				renderer.setScissor(0, 0, size.width, size.height);
 				renderer.setViewport(0, 0, size.width, size.height);
-				for(var i = 0; i < players.length; ++i) {
-					renderer.render(players[i].hudScene, players[i].hudCamera);
-				}
 			}
 
 		</script>

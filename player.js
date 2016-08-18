@@ -73,6 +73,8 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.cameraModifier = 0.0;
     this.controller = controller;
 
+    this.trailMaterial = new THREE.MeshBasicMaterial({color: playerColors[colorIndex]});
+
     this.viewport = getViewport(viewportIndex, playerCount);
     this.camera = new THREE.PerspectiveCamera(60, this.viewport.width / this.viewport.height, 10, 40000);
     this.camera.position.x = 0;
@@ -83,7 +85,7 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.camera.playerHeightOffset = this.radius;
 
     // hud scene
-    this.hudCamera = new THREE.OrthographicCamera(this.viewport.x, this.viewport.width, this.viewport.y, this.viewport.height, -1, 1);
+    this.hudCamera = new THREE.OrthographicCamera(0, this.viewport.width, 0, this.viewport.height, -1, 1);
     this.hudScene = new THREE.Scene();
 
     this.crosshairMeshNear = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
@@ -130,7 +132,7 @@ Player.prototype.update = function(dt) {
 
     if (this.nextTrail < clock.getElapsedTime()) {
         this.nextTrail = clock.getElapsedTime() + this.trailInterval;
-        spawnBullet(this.mesh.position, this.velocity, trailMaterial, true);
+        spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true);
     }
 
     if (Math.abs(this.controller.moveX.state) > 0.1 || Math.abs(this.controller.moveY.state) > 0.1) {
@@ -187,6 +189,6 @@ Player.prototype.projectToScreen = function(vec) {
     projected.multiply(new THREE.Vector3(1, -1, 0));
     projected.add(new THREE.Vector3(1, 1, 0));
     projected.multiply(new THREE.Vector3(this.viewport.width / 2.0, this.viewport.height / 2.0, 0));
-    projected.add(new THREE.Vector3(this.viewport.x, this.viewport.y, 0));
+    //projected.add(new THREE.Vector3(this.viewport.x, this.viewport.y, 0));
     return projected;
 }

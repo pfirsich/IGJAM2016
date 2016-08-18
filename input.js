@@ -16,7 +16,14 @@ Input.getAxisInputFromKeyboard = function(positive, negative) {
     return new Input(function() {return (keyboard.pressed(positive) ? 1.0 : 0.0) - (keyboard.pressed(negative) ? 1.0 : 0.0)});
 }
 
-function KeyboardController() {
+function KeyboardController(left, right, up, down, shoot) {
+    if(typeof(left) == 'undefined') {
+        left = "left";
+        right = "right";
+        up = "up";
+        down = "down";
+        shoot = "a";
+    }
     this.moveX = Input.getAxisInputFromKeyboard("left", "right");
     this.moveY = Input.getAxisInputFromKeyboard("up", "down");
     this.shoot = new Input(function() {return keyboard.pressed("a") ? 1.0 : 0.0});
