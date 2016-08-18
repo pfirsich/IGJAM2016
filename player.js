@@ -74,8 +74,6 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.focusPointDistance = this.speed;
     this.focusPointMaxDistance = this.speed * 10.0;
     this.velocity.multiplyScalar(this.speed);
-    this.nextShot = clock.getElapsedTime();
-    this.shotInterval = 0.15;
     this.nextTrail = clock.getElapsedTime();
     this.trailInterval = 0.05;
     this.cameraModifier = 0.0;
@@ -101,6 +99,13 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.crosshairMeshFar.scale.set(0.5, 0.5, 0.5);
     this.hudScene.add(this.crosshairMeshNear);
     this.hudScene.add(this.crosshairMeshFar);
+    
+    //shooting logic
+    this.nextShot = clock.getElapsedTime();
+    this.ammo = 0;
+    this.ammoRecharge = 3.0; //per second
+    this.ammoMax = 12;
+    this.shotInterval = 0.15;
 }
 
 Player.prototype.applyGeometryWhenReady = function() {
@@ -146,11 +151,26 @@ Player.prototype.update = function(dt) {
     var velDt = this.velocity.clone();
     velDt.multiplyScalar(dt);
     this.mesh.position = this.mesh.position.add(velDt);
+    
+    this.ammo += dt * this.ammoRecharge;
+    if (this.ammo > this.ammoMax)
+        this.ammo = this.ammoMax;
 
     if (this.controller.shoot.state > 0) {
-        if (this.nextShot < clock.getElapsedTime()) {
+        if (this.nextShot < clock.getElapsedTime() && this.ammo >= 1) {
             this.nextShot = clock.getElapsedTime() + this.shotInterval;
             spawnBullet(this.mesh.position, this.velocity, bulletMaterial, false);
+            
+            //heatup
+            this.ammo--;
+            
+            //sound
+            var numb = Math.random();
+            //console.log(numb);
+            
+            sounds.shoot2.rate(1.0 + numb * 0.3);
+            
+            sounds.shoot2.play();
         }
     }
 

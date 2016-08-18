@@ -34,6 +34,7 @@
 		<div id="container"><br /><br /><br /><br /><br />Generating world...</div>
 
 		<script src="three.js"></script>
+        <script src="howler.core.js"></script>
 
 		<script src="js/ImprovedNoise.js"></script>
 		<script src="js/Detector.js"></script>
@@ -93,6 +94,19 @@
 			    return future;
 			}*/
 		</script>
+        
+        <script>
+            //add sounds
+            var sounds = {
+                ground1: new Howl({src: ["sounds/Team8a_DamageWithGround.wav"]}),
+                ground2: new Howl({src: ["sounds/Team8a_DamageWithGround02.wav"]}),
+                ground3: new Howl({src: ["sounds/Team8a_DamageWithGround03.wav"]}),
+                explosion: new Howl({src: ["sounds/Team8a_Explosion.wav"]}),
+                engine: new Howl({src: ["sounds/Team8a_PlaneEngine_Loop.wav"]}),
+                shoot1: new Howl({src: ["sounds/Team8a_Shoot.wav"]}),
+                shoot2: new Howl({src: ["sounds/Team8a_Shoot_var_01.wav"]})
+            };
+        </script>
 
 		<script src="terrain.js"></script>
 		<script src="input.js"></script>
@@ -119,7 +133,7 @@
 				return rotMat;
 			}
 
-			function spawnBullet(position, direction, material, stand) {
+			function spawnBullet(position, direction, material, stand) {            
 				var bullet = new Object();
 				bullet.lifetime = 500.0;
 				bullet.velocity = direction.clone();
@@ -207,10 +221,12 @@
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);*/
+                
+                skybox = new THREE.Mesh
 
 				light = new THREE.DirectionalLight(0xffe0b3);
 				light.castShadow = true;
-				var shadowVolumeSize = 2000;
+				var shadowVolumeSize = 4000;
 				light.shadow.camera.near = 10;
 				light.shadow.camera.far = 20000;
 				light.shadow.camera.left = -shadowVolumeSize;
