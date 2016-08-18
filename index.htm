@@ -142,6 +142,35 @@
 					}
 				}
 			}
+            
+            function loadModels(player) {
+                var loader = new THREE.JSONLoader();
+                loader.load( 
+                    'models/spaceship.json',
+                    function(geometry) {
+                        //on load
+                        console.log("loading player");
+                        //var mesh = player.mesh.clone();
+                        
+                        //scene.remove(player.mesh);
+                        //player.mesh.geometry.dispose();
+                        //TODO dispose more
+                        
+                        var newMesh = new THREE.Mesh(geometry, player.material);
+                        
+                        newMesh.scale.set(100, 100, 100);
+                            
+                        newMesh.position.set(player.mesh.position.x, player.mesh.position.y, player.mesh.position.z);
+                        
+                        player.mesh = newMesh
+                        
+                        
+                        console.log(player.mesh);
+                        
+                        scene.add(newMesh);
+                    }
+                );
+            }
 
 			init();
 			animate();
@@ -159,6 +188,7 @@
 				scene.add(terrain.mesh);
 
 				player = new Object();
+                
 
 				player.geometry = new THREE.BoxGeometry(200, 200, 200);
 				player.material = new THREE.MeshPhongMaterial( {
@@ -190,6 +220,9 @@
 				player.controller = new KeyboardController("left", "right", "up", "down");
 
 				player.mesh.position.y = terrain.getHeight(0, 0) + 100;
+                
+                
+                loadModels(player);
 
 				light = new THREE.DirectionalLight(0xffe0b3);
 				light.castShadow = true;
