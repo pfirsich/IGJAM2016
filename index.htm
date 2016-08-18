@@ -36,8 +36,6 @@
 
 		<script src="three.js"></script>
 
-		<script src="js/controls/FirstPersonControls.js"></script>
-
 		<script src="js/ImprovedNoise.js"></script>
 		<script src="js/Detector.js"></script>
 		<script src="js/libs/stats.min.js"></script>
@@ -63,18 +61,20 @@
 			var bulletMaterial = new THREE.MeshPhongMaterial( {
 					color: 0xffff00,
 					emissive: 0xffff00,
-					side: THREE.DoubleSide,
 					shading: THREE.FlatShading
-				} );;
+				} );
 
-			var terrain;
+			var terrain, light;
 
-			var worldWidth = 1024, worldDepth = 1024,
+			var worldWidth = 256, worldDepth = 256,
 			worldHalfWidth = worldWidth / 2, worldHalfDepth = worldDepth / 2;
 
 			var clock = new THREE.Clock();
 
 			var keyboard = new THREEx.KeyboardState();
+
+			var sunDir = new THREE.Vector3(0.4, 1, 0.4);
+			sunDir.normalize();
 
 			function Terrain(width, height, widthSegments, heightSegments) {
 				this.width = width;
@@ -91,29 +91,33 @@
 				for ( var i = 0, j = 0, l = vertices.length; i < l; i ++, j += 3 ) {
 					vertices[j + 1] = this.data[i] * this.dataToUnitConversion;
 				}
+				this.geometry.computeFaceNormals();
+				this.geometry.computeVertexNormals();
 
 				this.texture = new THREE.CanvasTexture( this.generateTexture( this.data, worldWidth, worldDepth ) );
 				this.texture.wrapS = THREE.ClampToEdgeWrapping;
 				this.texture.wrapT = THREE.ClampToEdgeWrapping;
 
-				this.mesh = new THREE.Mesh( this.geometry, new THREE.MeshBasicMaterial( { map: this.texture } ) );
+				//this.material = new THREE.MeshBasicMaterial( { map: this.texture } );
+				this.material = new THREE.MeshLambertMaterial({
+					color: 0xe68a00,
+					shading: THREE.SmoothShading
+				});
+				this.mesh = new THREE.Mesh(this.geometry, this.material);
+				this.mesh.castShadow = true;
+				this.mesh.receiveShadow = true;
 			}
 
 			Terrain.prototype.generateHeight = function(width, height) {
 				var size = width * height, data = new Uint8Array( size ),
-				perlin = new ImprovedNoise(), quality = 100, z = Math.random() * 100;
+				perlin = new ImprovedNoise(), quality = 50, z = Math.random() * 100;
 
 				for ( var j = 0; j < 1; j ++ ) {
-
 					for ( var i = 0; i < size; i ++ ) {
-
 						var x = i % width, y = ~~ ( i / width );
-						data[ i ] += Math.abs( perlin.noise( x / quality, y / quality, z ) * quality * 1.75 );
-
+						data[ i ] += Math.abs( perlin.noise( x / quality, y / quality, z ) * quality * 10.75 );
 					}
-
 					quality *= 5;
-
 				}
 
 				return data;
@@ -245,14 +249,17 @@
 				bullet.lifetime = 5.0;
 				bullet.velocity = direction.clone();
 				bullet.velocity.normalize();
+				bullet.velocity.set(0, 0, 0);
 				bullet.velocity.multiplyScalar(30000.0);
 				bullet.mesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
 				scene.add(bullet.mesh);
+				bullet.mesh.castShadow = true;
 				bullet.mesh.position.copy(position);
 				alignAlongVector(bullet.mesh, direction);
 				bullet.alive = true;
 				bullets[nextBulletIndex] = bullet;
 				nextBulletIndex++;
+				if(nextBulletIndex >= maxBullets) nextBulletIndex = 0;
 			}
 
 			function updateBullets(dt) {
@@ -297,6 +304,8 @@
 					shading: THREE.FlatShading
 				} );
 				player.mesh = new THREE.Mesh(player.geometry, player.material);
+				player.mesh.castShadow = true;
+				player.mesh.receiveShadow = true;
 				player.velocity = new THREE.Vector3(0.0, 0.0, -1.0);
 				player.speed = 2000.0;
 				player.accel = player.speed;
@@ -307,13 +316,28 @@
 				player.focusPointMaxDistance = player.speed * 5.0;
 				player.velocity.multiplyScalar(player.speed);
 				player.nextShot = clock.getElapsedTime();
-				player.shotInterval = 0.2;
+				player.shotInterval = 0.15;
 				player.radius = 100.0;
 				scene.add(player.mesh);
 
 				player.controller = new KeyboardController("left", "right", "up", "down");
 
 				player.mesh.position.y = terrain.getHeight(0, 0) + 100;
+
+				light = new THREE.DirectionalLight(0xffe0b3);
+				light.castShadow = true;
+				var shadowVolumeSize = 2000;
+				light.shadow.camera.near = 10;
+				light.shadow.camera.far = 20000;
+				light.shadow.camera.left = -shadowVolumeSize;
+				light.shadow.camera.right = shadowVolumeSize;
+				light.shadow.camera.top = shadowVolumeSize;
+				light.shadow.camera.bottom = -shadowVolumeSize;
+				light.shadow.mapWidth = 8192;
+				light.shadow.mapHeight = 8192;
+				scene.add(light);
+
+				scene.add(new THREE.CameraHelper(light.shadow.camera));
 
 				camera.position.x = 0;
 				camera.position.z = 1000;
@@ -325,6 +349,9 @@
 				renderer.setClearColor( 0xbfd1e5 );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMapSoft = true;
 
 				container.innerHTML = "";
 
@@ -366,7 +393,7 @@
 				velDt.multiplyScalar(dt);
 				player.mesh.position = player.mesh.position.add(velDt);
 
-				if (player.controller.shoot.state > 0) {
+				if (player.controller.shoot.state > 0 || true) {
 					if (player.nextShot < clock.getElapsedTime()) {
 						player.nextShot = clock.getElapsedTime() + player.shotInterval;
 						spawnBullet(player.mesh.position, player.velocity);
@@ -398,6 +425,12 @@
 				focusPoint.setLength(lerp(player.focusPointMaxDistance, player.focusPointDistance, angleDist));
 				focusPoint.add(player.mesh.position);
 				camera.lookAt(focusPoint);
+
+				light.target = camera;
+				console.log(light.target.position);
+				var dir = sunDir.clone();
+				dir.multiplyScalar(5000.0);
+				light.position.copy(dir.add(light.target.position));
 			}
 
 			function animate() {
