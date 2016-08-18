@@ -54,6 +54,7 @@
 			var container, stats;
 
 			var camera, controls, scene, renderer;
+			var otherCamera;
 
 			var player;
 			var maxBullets = 2500, nextBulletIndex = 0, bullets = new Array(maxBullets);
@@ -150,6 +151,7 @@
 				container = document.getElementById( 'container' );
 
 				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 20000 );
+				otherCamera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight * 2, 1, 20000 );
 				hudCamera = new THREE.OrthographicCamera(0, window.innerWidth, 0, window.innerHeight, -1, 1);
 
 				scene = new THREE.Scene();
@@ -172,8 +174,11 @@
 				player.mesh.receiveShadow = true;
 				player.velocity = new THREE.Vector3(0.0, 0.0, -1.0);
 				player.speed = 2000.0;
+				player.maxSpeed = 2500.0;
+				player.minSpeed = 0.0;
+				player.accel = 1000.0;
 				player.radius = 100.0;
-				player.accel = player.speed * 1.5;
+				player.steerAccel = player.speed * 1.5;
 				player.cameraMinDistance = player.radius * 7.0;
 				player.cameraDistance = player.radius * 10.0;
 				player.cameraApproachSpeed = 1.0;
@@ -186,6 +191,7 @@
 				player.trailInterval = 0.15;
 				player.cameraModifier = 0.0;
 				scene.add(player.mesh);
+				player.speed = 30.0;
 
 				player.controller = new KeyboardController("left", "right", "up", "down");
 
@@ -264,7 +270,7 @@
 				var rotMat = alignAlongVector(player.mesh, player.velocity);
 
 				var move = new THREE.Vector3(-player.controller.moveX.state, -player.controller.moveY.state, 0);
-				move.multiplyScalar(player.accel);
+				move.multiplyScalar(player.steerAccel);
 				move.multiplyScalar(dt);
 				move.applyMatrix4(rotMat);
 
@@ -272,6 +278,11 @@
 				if (player.mesh.position.y < terrainHeight) {
 					player.mesh.position.setY(terrainHeight);
 					player.velocity.add(new THREE.Vector3(0, 200, 0));
+				}
+
+				if (Math.abs(player.controller.accelerate.state) > 0.1) {
+					player.speed += player.controller.accelerate.state * player.accel * dt;
+					player.speed = Math.max(Math.min(player.speed, player.maxSpeed), player.minSpeed);
 				}
 
 				player.velocity.add(move);
@@ -371,7 +382,25 @@
 
 			function render() {
 				renderer.clear();
+				var size = renderer.getSize();
+
+				/*otherCamera.position.copy(camera.position);
+				otherCamera.lookAt(0, 0, 0);
+
+				renderer.setScissorTest(true);
+
+				renderer.setScissor( 0, 0, size.width, size.height / 2 );
+				renderer.setViewport( 0, 0, size.width, size.height / 2 );*/
 				renderer.render(scene, camera);
+
+				/*renderer.setScissor(0, size.height / 2, size.width, size.height / 2 );
+				renderer.setViewport(0, size.height / 2, size.width, size.height / 2 );
+				renderer.render(scene, otherCamera);
+
+				renderer.setScissorTest(false);
+
+				renderer.setScissor(0, 0, size.width, size.height);
+				renderer.setViewport(0, 0, size.width, size.height);*/
 				renderer.render(hudScene, hudCamera);
 			}
 

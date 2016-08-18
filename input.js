@@ -18,10 +18,12 @@ function KeyboardController(left, right, up, down) {
     this.moveX = Input.getAxisInputFromKeyboard(left, right);
     this.moveY = Input.getAxisInputFromKeyboard(up, down);
     this.shoot = new Input(function() {return keyboard.pressed("a") ? 1.0 : 0.0});
+    this.accelerate = Input.getAxisInputFromKeyboard("d", "f");
 }
 
 KeyboardController.prototype.update = function() {
     this.moveX.update();
     this.moveY.update();
     this.shoot.update();
+    this.accelerate.update();
 }
