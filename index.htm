@@ -56,13 +56,15 @@
 			var camera, controls, scene, renderer;
 
 			var player;
-			var maxBullets = 250, nextBulletIndex = 0, bullets = new Array(maxBullets);
+			var maxBullets = 2500, nextBulletIndex = 0, bullets = new Array(maxBullets);
 			var bulletGeometry = new THREE.BoxGeometry(40, 40, 100);
 			var bulletMaterial = new THREE.MeshPhongMaterial( {
 					color: 0xffff00,
 					emissive: 0xffff00,
 					shading: THREE.FlatShading
 				} );
+
+			var crosshairMeshNear, crosshairMeshFar;
 
 			var terrain, light;
 
@@ -73,7 +75,7 @@
 
 			var keyboard = new THREEx.KeyboardState();
 
-			var sunDir = new THREE.Vector3(0.4, 1, 0.4);
+			var sunDir = new THREE.Vector3(0.6, 1, 0.6);
 			sunDir.normalize();
 
 			function Terrain(width, height, widthSegments, heightSegments) {
@@ -244,14 +246,16 @@
 				return rotMat;
 			}
 
-			function spawnBullet(position, direction) {
+			function spawnBullet(position, direction, material, stand) {
 				var bullet = new Object();
-				bullet.lifetime = 5.0;
+				bullet.lifetime = 500.0;
 				bullet.velocity = direction.clone();
 				bullet.velocity.normalize();
-				bullet.velocity.set(0, 0, 0);
+				if (stand == true) {
+					bullet.velocity.set(0, 0, 0);
+				}
 				bullet.velocity.multiplyScalar(30000.0);
-				bullet.mesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
+				bullet.mesh = new THREE.Mesh(bulletGeometry, material);
 				scene.add(bullet.mesh);
 				bullet.mesh.castShadow = true;
 				bullet.mesh.position.copy(position);
@@ -288,8 +292,10 @@
 				container = document.getElementById( 'container' );
 
 				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 20000 );
+				hudCamera = new THREE.OrthographicCamera(0, window.innerWidth, 0, window.innerHeight, -1, 1);
 
 				scene = new THREE.Scene();
+				hudScene = new THREE.Scene();
 
 				terrain = new Terrain(30000, 30000, worldWidth - 1, worldDepth - 1);
 				scene.add(terrain.mesh);
@@ -308,6 +314,7 @@
 				player.mesh.receiveShadow = true;
 				player.velocity = new THREE.Vector3(0.0, 0.0, -1.0);
 				player.speed = 2000.0;
+				player.radius = 100.0;
 				player.accel = player.speed;
 				player.cameraMinDistance = 50.0;
 				player.cameraDistance = 1000.0;
@@ -317,7 +324,8 @@
 				player.velocity.multiplyScalar(player.speed);
 				player.nextShot = clock.getElapsedTime();
 				player.shotInterval = 0.15;
-				player.radius = 100.0;
+				player.nextTrail = clock.getElapsedTime();
+				player.trailInterval = 0.15;
 				scene.add(player.mesh);
 
 				player.controller = new KeyboardController("left", "right", "up", "down");
@@ -344,11 +352,19 @@
 				camera.position.y = terrain.getHeight(camera.position.x, camera.position.z) + 500;
 				camera.lookAt(player.mesh.position);
 				camera.terrainOffset = 60;
+				camera.playerHeightOffset = player.radius;
 
-				renderer = new THREE.WebGLRenderer();
+				// ui scene
+				var crosshairMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 } );
+				var crosshairGeometry = new THREE.PlaneGeometry(50, 50, 1, 1);
+				crosshairMesh = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
+				hudScene.add(crosshairMesh);
+
+				renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true});
 				renderer.setClearColor( 0xbfd1e5 );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.autoClear = false;
 
 				renderer.shadowMap.enabled = true;
 				renderer.shadowMapSoft = true;
@@ -366,6 +382,10 @@
 			function onWindowResize() {
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
+
+				camera.right = window.innerWidth;
+				camera.bottom = window.innerHeight;
+				hudCamera.updateProjectionMatrix();
 
 				renderer.setSize( window.innerWidth, window.innerHeight );
 			}
@@ -393,11 +413,16 @@
 				velDt.multiplyScalar(dt);
 				player.mesh.position = player.mesh.position.add(velDt);
 
-				if (player.controller.shoot.state > 0 || true) {
+				if (player.controller.shoot.state > 0) {
 					if (player.nextShot < clock.getElapsedTime()) {
 						player.nextShot = clock.getElapsedTime() + player.shotInterval;
-						spawnBullet(player.mesh.position, player.velocity);
+						spawnBullet(player.mesh.position, player.velocity, bulletMaterial, false);
 					}
+				}
+
+				if (player.nextTrail < clock.getElapsedTime()) {
+					player.nextTrail = clock.getElapsedTime() + player.trailInterval;
+					spawnBullet(player.mesh.position, player.velocity, player.material, true);
 				}
 			}
 
@@ -408,9 +433,9 @@
 			function updateCamera(dt) {
 				var playerVelocity = player.velocity.clone();
 				playerVelocity.normalize();
-				var angleDist = Math.max(0, camera.getWorldDirection().dot(playerVelocity));
+				var angleDist = Math.pow(Math.max(0, camera.getWorldDirection().dot(playerVelocity)), 40.0);
 
-				var playerPos = player.mesh.position.clone();
+				var playerPos = player.mesh.position.clone().add(new THREE.Vector3(0, angleDist * camera.playerHeightOffset, 0));
 				var rel = playerPos.sub(camera.position);
 				var targetDistance = lerp(player.cameraMinDistance, player.cameraDistance, angleDist);
 				rel.setLength((rel.length() - targetDistance));
@@ -427,10 +452,18 @@
 				camera.lookAt(focusPoint);
 
 				light.target = camera;
-				console.log(light.target.position);
 				var dir = sunDir.clone();
 				dir.multiplyScalar(5000.0);
 				light.position.copy(dir.add(light.target.position));
+			}
+
+			function updateUI(dt) {
+				var crosshairDelta = player.velocity.clone();
+				crosshairDelta.normalize();
+				crosshairDelta.multiplyScalar(player.speed * 3.0);
+				var crosshairPos = player.mesh.position.clone().add(crosshairDelta);
+				crosshairPos.project(camera);
+				crosshairMesh.position.copy(crosshairPos);
 			}
 
 			function animate() {
@@ -441,13 +474,16 @@
 				updateBullets(dt);
 				updatePlayer(dt);
 				updateCamera(dt);
+				updateUI(dt);
 
 				render();
 				stats.update();
 			}
 
 			function render() {
-				renderer.render( scene, camera );
+				renderer.clear();
+				renderer.render(scene, camera);
+				renderer.render(hudScene, hudCamera);
 			}
 
 		</script>
