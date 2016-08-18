@@ -10,6 +10,10 @@ var crosshairMaterial = new THREE.MeshBasicMaterial({
 var crosshairGeometry = new THREE.PlaneGeometry(50, 50, 1, 1);
 var playerGeometry = new THREE.BoxGeometry(200, 200, 200);
 
+/*console.log("here");
+playerGeometryFuture = superLoad(jsonLoader.load.bind(jsonLoader), ["spaceship.json"]);
+console.log("no");*/
+
 var playerColors = [0x1560ff, 0x15ff60, 0xff1560, 0xff8015];
 
 function getViewport(index, number) {
@@ -50,7 +54,11 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
         side: THREE.DoubleSide,
         shading: THREE.FlatShading
     });
+    //console.log(playerGeometryFuture.value);
     this.mesh = new THREE.Mesh(playerGeometry, this.material);
+    jsonLoader.load("spaceship.json", this.applyGeometryWhenReady());
+    var shipScale = 100.0;
+    this.mesh.scale.set(shipScale, shipScale, shipScale);
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.velocity = new THREE.Vector3(0.0, 0.0, -1.0);
@@ -93,6 +101,22 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.crosshairMeshFar.scale.set(0.5, 0.5, 0.5);
     this.hudScene.add(this.crosshairMeshNear);
     this.hudScene.add(this.crosshairMeshFar);
+}
+
+Player.prototype.applyGeometryWhenReady = function() {
+    var that = this;
+    return function(geometry) {
+        console.log(that, that.mesh);
+        scene.remove(that.mesh);
+        var newMesh = new THREE.Mesh(geometry, that.material);
+        var shipScale = 100.0;
+        newMesh.scale.set(shipScale, shipScale, shipScale);
+        newMesh.position.copy(that.mesh.position);
+        newMesh.castShadow = true;
+        newMesh.receiveShadow = true;
+        that.mesh = newMesh;
+        scene.add(that.mesh);
+    }
 }
 
 Player.prototype.update = function(dt) {

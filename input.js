@@ -24,9 +24,9 @@ function KeyboardController(left, right, up, down, shoot) {
         down = "down";
         shoot = "a";
     }
-    this.moveX = Input.getAxisInputFromKeyboard("left", "right");
-    this.moveY = Input.getAxisInputFromKeyboard("up", "down");
-    this.shoot = new Input(function() {return keyboard.pressed("a") ? 1.0 : 0.0});
+    this.moveX = Input.getAxisInputFromKeyboard(left, right);
+    this.moveY = Input.getAxisInputFromKeyboard(up, down);
+    this.shoot = new Input(function() {return keyboard.pressed(shoot) ? 1.0 : 0.0});
     this.accelerate = Input.getAxisInputFromKeyboard("d", "f");
 }
 
@@ -45,3 +45,17 @@ function DummyController() {
 }
 
 DummyController.prototype.update = function() {}
+
+function GamepadController(gamepad) {
+    this.moveX = new Input(function(){return gamepad.axes[0]});
+    this.moveY = new Input(function(){return gamepad.axes[1]});
+    this.shoot = new Input(function(){return gamepad.buttons[0].pressed;});
+    this.accelerate = new Input(function(){return 0;});
+}
+
+GamepadController.prototype.update = function() {
+    this.moveX.update();
+    this.moveY.update();
+    this.shoot.update();
+    this.accelerate.update();
+}

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>sadness</title>
+		<title>Gesichtskirmes // Tron Cruise</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
@@ -66,10 +66,32 @@
 
 			var clock = new THREE.Clock();
 
+			var initialized = false;
+
 			var sunDir = new THREE.Vector3(0.6, 1, 0.6);
 			sunDir.normalize();
 
 			var texLoader = new THREE.TextureLoader();
+			var jsonLoader = new THREE.JSONLoader();
+
+			/*var resourcesToLoad = 0;
+			var resourcesLoaded = 0;
+			function superLoad(callback, args) {
+			    resourcesToLoad += 1;
+			    var future = new Object();
+			    future.done = false;
+			    future.value = undefined;
+			    args.push(function() {
+			    	console.log("done");
+			        future.done = true;
+			        future.value = arguments;
+			        resourcesLoaded += 1;
+			    });
+			    console.log(args);
+			    callback.apply(args);
+			    console.log("done");
+			    return future;
+			}*/
 		</script>
 
 		<script src="terrain.js"></script>
@@ -151,13 +173,24 @@
 				terrain = new Terrain(30000, 30000, worldWidth - 1, worldDepth - 1);
 				scene.add(terrain.mesh);
 
+				//console.log(navigator.getGamepads());
+				//pad = navigator.getGamepads()[1];
+
+
 				var player = new Player(1, 1, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);
 
-				/*player = new Player(2, 4, 1, new KeyboardController());
+
+				/*var player = new Player(1, 4, 0, new KeyboardController());
+				player.mesh.position.set(1000, 0, 0);
+				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
+				players.push(player);
+				scene.add(player.mesh);
+
+				player = new Player(2, 4, 1, new KeyboardController());
 				player.mesh.position.set(2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
@@ -207,6 +240,8 @@
 				container.appendChild( stats.dom );
 
 				window.addEventListener( 'resize', onWindowResize, false );
+
+				initialized = true;
 			}
 
 			function onWindowResize() {
@@ -223,15 +258,22 @@
 			function animate() {
 				requestAnimationFrame(animate);
 
-				var dt = clock.getDelta();
+				/*if(resourcesToLoad == resourcesLoaded) {
+					console.log("init");
+					init();
+				}*/
 
-				updateBullets(dt);
-				for(var i = 0; i < players.length; ++i) {
-					players[i].update(dt);
-				}
+				//if(initialized) {
+					var dt = clock.getDelta();
 
-				render();
-				stats.update();
+					updateBullets(dt);
+					for(var i = 0; i < players.length; ++i) {
+						players[i].update(dt);
+					}
+
+					render();
+					stats.update();
+				//}
 			}
 
 			function render() {
