@@ -64,7 +64,7 @@ GamepadController.prototype.update = function() {
 
 var haveEvents = 'ongamepadconnected' in window;
 console.log(haveEvents);
-var controllers = {};
+var connectedGamepads = {};
 
 function connecthandler(e) {
     addgamepad(e.gamepad);
@@ -72,8 +72,8 @@ function connecthandler(e) {
 
 function updatePlayerControllers(){
     var curPlayerId = 0;
-    for (i in controllers) {
-        var gamepad = controllers[i];
+    for (i in connectedGamepads) {
+        var gamepad = connectedGamepads[i];
         if (curPlayerId >= players.length)
             break;
         players[curPlayerId].controller = new GamepadController(gamepad);
@@ -82,7 +82,7 @@ function updatePlayerControllers(){
 }
 
 function addgamepad(gamepad) {
-    controllers[gamepad.index] = gamepad;
+    connectedGamepads[gamepad.index] = gamepad;
     updatePlayerControllers();
     console.log("gamepad " + gamepad.index + " connected")
 }
@@ -92,7 +92,7 @@ function disconnecthandler(e) {
 }
 
 function removegamepad(gamepad) {
-    delete controllers[gamepad.index];
+    delete connectedGamepads[gamepad.index];
     console.log("gamepad " + gamepad.index + " disconnected")
     //updatePlayerCotrollers(); do this ? 
 }
@@ -103,8 +103,8 @@ function scangamepads() {
     var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
     for (var i = 0; i < gamepads.length; i++) {
         if (gamepads[i]) {
-            if (gamepads[i].index in controllers) {
-                controllers[gamepads[i].index] = gamepads[i];
+            if (gamepads[i].index in connectedGamepads) {
+                connectedGamepads[gamepads[i].index] = gamepads[i];
             } else {
                 addgamepad(gamepads[i]);
             }
@@ -116,7 +116,8 @@ function scangamepads() {
 window.addEventListener("gamepadconnected", connecthandler);
 window.addEventListener("gamepaddisconnected", disconnecthandler);
 
+/*
 if (!haveEvents) {
     setInterval(scangamepads, 500);
-}
+}*/
         
