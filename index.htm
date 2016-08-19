@@ -28,6 +28,8 @@
 			}
 
 		</style>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.8/socket.io.min.js"></script>
 	</head>
 	<body>
 
@@ -253,13 +255,7 @@
 				//pad = navigator.getGamepads()[1];
 
 
-				var player = new Player(1, 1, 0, new KeyboardController());
-				player.mesh.position.set(1000, 0, 0);
-				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
-				players.push(player);
-				scene.add(player.mesh);
-
-				/*var player = new Player(1, 2, 0, new KeyboardController("left", "right", "up", "down", "l"));
+				var player = new Player(1, 2, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
@@ -269,7 +265,7 @@
 				player.mesh.position.set(2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);*/
+				scene.add(player.mesh);
 
 				/*player = new Player(3, 4, 2, new KeyboardController());
 				player.mesh.position.set(-1000, 0, 0);
@@ -367,6 +363,10 @@
 					renderer.render(skyboxScene, players[i].camera);
 					renderer.render(scene, players[i].camera);
 					renderer.render(players[i].hudScene, players[i].hudCamera);
+
+					// var mp = players[i].maskViewport;
+					// renderer.setViewport(mp.x, mp.y, mp.width, mp.height);
+					// renderer.render(players[i].maskScene, players[i].maskCamera);
 				}
 				renderer.setScissorTest(false);
 
@@ -375,6 +375,9 @@
 			}
 
 		</script>
+
+		<script src="sockets.js"></script>
+
 
 	</body>
 </html>
