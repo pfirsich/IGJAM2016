@@ -2,17 +2,19 @@
 
 This game was made for IGJAM 2016 at gamescom. - Theme: **MASKS**
 
-For this game you need node.js and OpenFace installed (meaning this probably never be tried by anyone).
-We will post instructions on this project's GitHub once the jam is over (+ a couple of months of course).
+It's a competitive 2-player Star Fox/Top Gun inspired TRON-like set in a post-apocalyptic desert world. 
 
-It's a competitive 2 player game you control using your webcam, which is mandatory. 
-To steer the ship, turn your head in the direction you want to fly in.
-To shoot, press either l or x.
-If you hit a players trail, you die and if you get hit by their laser, you die aswell (dying is a central theme of this game).
+If you don't have the face-recoginition server running (instruction for setting that up will follow soon-ish - you'll need node.js and OpenFace), you can use w,a,s,d to move and v to shoot as player 1 and arrow keys + l as player 2.
 
-Apart from node.js and OpenFace, we used three.js for the actual game and howler.js for sound.
+To see how the game is played with webcam controls, watch this video:
+TODO: LINK
+
+For the game itself, we used three.js for graphics and howler.js for sound.
+
+## Instructions
+To try, just download a zip of the repository and open index.html in your browser (you probably want to use Chrome, if you want reasonable performance).
 
 ## Credits
 Nils Gawlik - Programming, Art
 John Reed - Programming
-Joel Schumacher - Programming, definitely Art
+Joel Schumacher - Programming, definitely Art - http://theshoemaker.de
