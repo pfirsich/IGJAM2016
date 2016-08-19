@@ -119,9 +119,11 @@
 				return rotMat;
 			}
 
+			var maxBulletLifetime = 100000.0;
+			var bulletInvulnTime = 0.5;
 			function spawnBullet(position, direction, material, stand) {
 				var bullet = new Object();
-				bullet.lifetime = 500.0;
+				bullet.lifetime = maxBulletLifetime;
 				bullet.velocity = direction.clone();
 				bullet.velocity.normalize();
 				if (stand == true) {
@@ -134,12 +136,14 @@
 				bullet.mesh.position.copy(position);
 				alignAlongVector(bullet.mesh, direction);
 				bullet.alive = true;
+				bullet.stand = stand;
 				bullets[nextBulletIndex] = bullet;
 				nextBulletIndex++;
 				if(nextBulletIndex >= maxBullets) nextBulletIndex = 0;
 			}
 
 			function updateBullets(dt) {
+				var rad = players[0].radius + 100;
 				for (var i = 0; i < maxBullets; ++i) {
 					var bullet = bullets[i];
 					if (bullet != undefined && bullet.alive) {
@@ -152,7 +156,43 @@
 							deltaPos.multiplyScalar(dt);
 							bullet.mesh.position.add(deltaPos);
 
-							// check collisions
+							for (var j = 0; j < players.length; ++j) {
+								if(players[j].alive) {
+									var rel = bullet.mesh.position.clone().sub(players[j].mesh.position);
+									var collision = false;
+									if (rel.dot(rel) < rad*rad) {
+										collision = true;
+									} else if (bullet.stand == false) { // a real bullet, not a trail
+										var vel = bullet.velocity.clone();
+										vel.multiplyScalar(dt);
+										var A = vel.dot(vel);
+										var B = 2 * rel.dot(vel);
+										// theres some leeway for non-trail-bullets
+										var C = rel.dot(rel) - players[j].radius*players[j].radius*1.5;
+										var root = Math.sqrt(B*B - 4*C)
+										var t = (-B - root) / 2;
+										if (t > 0) {
+											collision = true;
+										} else {
+											t = (-B + root) / 2;
+											if (t > 0) collision = true;
+										}
+										if(collision) {
+											collision = t > 0 && t < 1;
+											if (collision) {
+												console.log("collision!", t);
+											}
+										}
+									}
+									if (collision) {
+										if (maxBulletLifetime - bullet.lifetime > bulletInvulnTime) {
+											players[j].die();
+											bullet.alive = false;
+											scene.remove(bullet.mesh);
+										}
+									}
+								}
+							}
 						}
 					}
 				}
@@ -177,14 +217,14 @@
 				//pad = navigator.getGamepads()[1];
 
 
-				var player = new Player(1, 1, 0, new KeyboardController());
+				/*var player = new Player(1, 1, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);
+				scene.add(player.mesh);*/
 
 
-				/*var player = new Player(1, 4, 0, new KeyboardController());
+				var player = new Player(1, 4, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
@@ -206,7 +246,7 @@
 				player.mesh.position.set(-2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);*/
+				scene.add(player.mesh);
 
 				light = new THREE.DirectionalLight(0xffe0b3);
 				light.castShadow = true;

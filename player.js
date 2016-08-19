@@ -1,4 +1,4 @@
-players = []
+var players = [];
 
 var crosshairMaterial = new THREE.MeshBasicMaterial({
     color: 0x00ff00,
@@ -80,6 +80,7 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.trailInterval = 0.05;
     this.cameraModifier = 0.0;
     this.controller = controller;
+    this.alive = true;
 
     this.trailMaterial = new THREE.MeshBasicMaterial({color: playerColors[colorIndex]});
 
@@ -101,6 +102,17 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.crosshairMeshFar.scale.set(0.5, 0.5, 0.5);
     this.hudScene.add(this.crosshairMeshNear);
     this.hudScene.add(this.crosshairMeshFar);
+
+    // particle system
+    this.particleGroup = new THREE.Object3D();
+    this.particleMesh = new THREE.BoxGeometry(40, 40, 40);
+    this.particleMaterial = new THREE.MeshBasicMaterial({
+        color: playerColors[colorIndex],
+        transparent: true,
+        opacity: 0.5,
+        blending: THREE["AdditiveBlending"],
+    });
+    this.particles = [];
 }
 
 Player.prototype.applyGeometryWhenReady = function() {
@@ -124,54 +136,82 @@ Player.prototype.update = function(dt) {
 
     var rotMat = alignAlongVector(this.mesh, this.velocity);
 
-    var move = new THREE.Vector3(-this.controller.moveX.state, -this.controller.moveY.state, 0);
-    move.multiplyScalar(this.steerAccel);
-    move.multiplyScalar(dt);
-    move.applyMatrix4(rotMat);
+    var angleDist = 0.0;
+    if (this.alive) {
+        var move = new THREE.Vector3(-this.controller.moveX.state, -this.controller.moveY.state, 0);
+        move.multiplyScalar(this.steerAccel);
+        move.multiplyScalar(dt);
+        move.applyMatrix4(rotMat);
 
-    var terrainHeight = terrain.getHeight(this.mesh.position.x, this.mesh.position.z);
-    if (this.mesh.position.y < terrainHeight) {
-        this.mesh.position.setY(terrainHeight);
-        this.velocity.add(new THREE.Vector3(0, 200, 0));
-    }
-
-    if (Math.abs(this.controller.accelerate.state) > 0.1) {
-        this.speed += this.controller.accelerate.state * this.accel * dt;
-        this.speed = Math.max(Math.min(this.speed, this.maxSpeed), this.minSpeed);
-    }
-
-    this.velocity.add(move);
-    this.velocity.setLength(this.speed);
-
-    var velDt = this.velocity.clone();
-    velDt.multiplyScalar(dt);
-    this.mesh.position = this.mesh.position.add(velDt);
-
-    if (this.controller.shoot.state > 0) {
-        if (this.nextShot < clock.getElapsedTime()) {
-            this.nextShot = clock.getElapsedTime() + this.shotInterval;
-            spawnBullet(this.mesh.position, this.velocity, bulletMaterial, false);
+        var terrainHeight = terrain.getHeight(this.mesh.position.x, this.mesh.position.z);
+        if (this.mesh.position.y < terrainHeight) {
+            this.spark(20);
+            this.mesh.position.setY(terrainHeight);
+            this.velocity.add(new THREE.Vector3(0, 200, 0));
         }
-    }
 
-    if (this.nextTrail < clock.getElapsedTime()) {
-        this.nextTrail = clock.getElapsedTime() + this.trailInterval;
-        spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true);
-    }
+        if (Math.abs(this.controller.accelerate.state) > 0.1) {
+            this.speed += this.controller.accelerate.state * this.accel * dt;
+            this.speed = Math.max(Math.min(this.speed, this.maxSpeed), this.minSpeed);
+        }
 
-    if (Math.abs(this.controller.moveX.state) > 0.1 || Math.abs(this.controller.moveY.state) > 0.1) {
-        this.cameraModifier += dt;
-        if (this.cameraModifier > 1.0) this.cameraModifier = 1.0;
+        this.velocity.add(move);
+        this.velocity.setLength(this.speed);
+
+        var velDt = this.velocity.clone();
+        velDt.multiplyScalar(dt);
+        this.mesh.position = this.mesh.position.add(velDt);
+
+        if (this.controller.shoot.state > 0) {
+            if (this.nextShot < clock.getElapsedTime()) {
+                this.nextShot = clock.getElapsedTime() + this.shotInterval;
+                spawnBullet(this.mesh.position, this.velocity, bulletMaterial, false);
+            }
+        }
+
+        if (this.nextTrail < clock.getElapsedTime()) {
+            this.nextTrail = clock.getElapsedTime() + this.trailInterval;
+            spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true);
+        }
+
+        if (Math.abs(this.controller.moveX.state) > 0.1 || Math.abs(this.controller.moveY.state) > 0.1) {
+            this.cameraModifier += dt;
+            if (this.cameraModifier > 1.0) this.cameraModifier = 1.0;
+        } else {
+            this.cameraModifier -= dt;
+            if (this.cameraModifier < 0.0) this.cameraModifier = 0.0;
+        }
+
+        // update camera
+        var playerVelocity = this.velocity.clone();
+        playerVelocity.normalize();
+        //var angleDist = Math.pow(Math.max(0, this.camera.getWorldDirection().dot(playerVelocity)), 40.0);
+        angleDist = 1.0 - this.cameraModifier;
+
+        // adjust lookat
+        var focusPoint = this.velocity.clone();
+        focusPoint.setLength(lerp(this.focusPointMaxDistance, this.focusPointDistance, angleDist));
+        focusPoint.add(this.mesh.position);
+        this.camera.lookAt(focusPoint);
     } else {
-        this.cameraModifier -= dt;
-        if (this.cameraModifier < 0.0) this.cameraModifier = 0.0;
+        this.velocity.add(new THREE.Vector3(0, -500 * dt, 0));
+        this.mesh.position = this.mesh.position.add(this.velocity.clone().multiplyScalar(dt));
+
+        var terrainHeight = terrain.getHeight(this.mesh.position.x, this.mesh.position.z);
+        if (this.mesh.position.y < terrainHeight) {
+            if (this.velocity.length() > 50) this.spark(400);
+            this.velocity = new THREE.Vector3(0, 0, 0);
+            this.mesh.position.setY(terrainHeight);
+        }
+
+        if (this.velocity.length() > 50) {
+            this.angle += dt;
+        }
+
+        this.mesh.setRotationFromAxisAngle(this.rotAxis, this.angle);
+        this.camera.lookAt(this.mesh.position);
     }
 
-    // update camera
-    var playerVelocity = this.velocity.clone();
-    playerVelocity.normalize();
-    //var angleDist = Math.pow(Math.max(0, this.camera.getWorldDirection().dot(playerVelocity)), 40.0);
-    angleDist = 1.0 - this.cameraModifier;
 
     var playerPos = this.mesh.position.clone().add(new THREE.Vector3(0, angleDist * this.camera.playerHeightOffset, 0));
     var rel = playerPos.sub(this.camera.position);
@@ -184,12 +224,6 @@ Player.prototype.update = function(dt) {
     if (this.camera.position.y < terrainHeight) {
         this.camera.position.y = terrainHeight + this.camera.terrainOffset;
     }
-
-    // adjust lookat
-    var focusPoint = this.velocity.clone();
-    focusPoint.setLength(lerp(this.focusPointMaxDistance, this.focusPointDistance, angleDist));
-    focusPoint.add(this.mesh.position);
-    this.camera.lookAt(focusPoint);
 
     light.target = this.camera;
     var dir = sunDir.clone();
@@ -205,6 +239,20 @@ Player.prototype.update = function(dt) {
 
     crosshairPos = this.mesh.position.clone().add(vel.setLength(crosshairDist*3.0));
     this.crosshairMeshFar.position.copy(this.projectToScreen(crosshairPos));
+
+    // update particles
+    for(var i = 0; i < this.particles.length; ++i) {
+        var particle = this.particles[i];
+        particle.lifetime -= dt;
+        if (particle.lifetime <= 0) {
+            scene.remove(particle.mesh);
+            this.particles.splice(this.particles.indexOf(particle), 1);
+        }
+        particle.mesh.position.add(particle.velocity.clone().multiplyScalar(dt));
+        var scale = particle.mesh.scale.x * Math.pow(0.6, dt);
+        particle.mesh.scale.set(scale, scale, scale);
+        particle.velocity.multiplyScalar(Math.pow(0.1, dt));
+    }
 }
 
 // dependent on player viewport!
@@ -215,4 +263,26 @@ Player.prototype.projectToScreen = function(vec) {
     projected.multiply(new THREE.Vector3(this.viewport.width / 2.0, this.viewport.height / 2.0, 0));
     //projected.add(new THREE.Vector3(this.viewport.x, this.viewport.y, 0));
     return projected;
+}
+
+Player.prototype.spark = function(amount) {
+    for(var i = 0; i < amount; ++i) {
+        var particle = new Object();
+        particle.mesh = new THREE.Mesh(this.particleMesh, this.particleMaterial);
+        particle.velocity = new THREE.Vector3(Math.random(), Math.random(), Math.random());
+        particle.velocity.multiplyScalar(2.0).sub(new THREE.Vector3(1, 1, 1)).normalize();
+        particle.velocity.multiplyScalar(800 + Math.random() * 400);
+        particle.mesh.position.copy(this.mesh.position);
+        particle.lifetime = 5.0;
+        this.particles.push(particle);
+        scene.add(particle.mesh);
+    }
+}
+
+Player.prototype.die = function() {
+    this.alive = false;
+    this.spark(100);
+    this.rotAxis = new THREE.Vector3(Math.random(), Math.random(), Math.random());
+    this.rotAxis.multiplyScalar(2.0).sub(new THREE.Vector3(-1, -1, -1)).normalize();
+    this.angle = 0;
 }
