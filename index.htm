@@ -176,6 +176,7 @@
 				bullet.mesh.setRotationFromQuaternion(alignResult.rotQuat);
 				bullet.alive = true;
 				bullet.stand = stand;
+				bullet.canCollide = !stand;
 				bullets[nextBulletIndex] = bullet;
 				nextBulletIndex++;
 				if(nextBulletIndex >= maxBullets) nextBulletIndex = 0;
@@ -221,12 +222,15 @@
 										}
 									}
 								}
+								// last created bullet is collision immune
 								if (collision) {
-									if (!bullet.stand || maxBulletLifetime - bullet.lifetime > bulletInvulnTime) {
+									if (bullet.live) {
 										players[j].die();
 										bullet.alive = false;
 										scene.remove(bullet.mesh);
 									}
+								} else {
+									bullet.live = true;
 								}
 							}
 						}

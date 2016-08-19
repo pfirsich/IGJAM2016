@@ -201,6 +201,7 @@ Player.prototype.update = function(dt) {
 
         if (this.nextTrail < clock.getElapsedTime()) {
             this.nextTrail = clock.getElapsedTime() + this.trailInterval;
+            this.lastCreatedBulletIndex = nextBulletIndex;
             spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true);
         }
 
