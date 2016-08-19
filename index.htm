@@ -108,6 +108,9 @@
                 shoot2: new Howl({src: ["sounds/Team8a_Shoot_var_01.wav"]})
             };
         </script>
+        <script>
+
+        </script>   
 
 		<script src="terrain.js"></script>
 		<script src="input.js"></script>
@@ -187,19 +190,19 @@
 
 				terrain = new Terrain(30000, 30000, worldWidth - 1, worldDepth - 1);
 				scene.add(terrain.mesh);
-
-				//console.log(navigator.getGamepads());
+                
+                //console.log(gamepads);
 				//pad = navigator.getGamepads()[1];
 
 
-				var player = new Player(1, 1, 0, new KeyboardController());
+				/*var player = new Player(1, 1, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);
+				scene.add(player.mesh);*/
 
 
-				/*var player = new Player(1, 4, 0, new KeyboardController());
+				var player = new Player(1, 4, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
@@ -221,7 +224,7 @@
 				player.mesh.position.set(-2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);*/
+				scene.add(player.mesh);
                 
                 skybox = new THREE.Mesh
 

@@ -47,7 +47,7 @@ function DummyController() {
 DummyController.prototype.update = function() {}
 
 function GamepadController(gamepad) {
-    this.moveX = new Input(function(){return gamepad.axes[0]});
+    this.moveX = new Input(function(){return -gamepad.axes[0]});
     this.moveY = new Input(function(){return gamepad.axes[1]});
     this.shoot = new Input(function(){return gamepad.buttons[0].pressed;});
     this.accelerate = new Input(function(){return 0;});
@@ -59,3 +59,64 @@ GamepadController.prototype.update = function() {
     this.shoot.update();
     this.accelerate.update();
 }
+
+//game pad registration, etc.
+
+var haveEvents = 'ongamepadconnected' in window;
+console.log(haveEvents);
+var controllers = {};
+
+function connecthandler(e) {
+    addgamepad(e.gamepad);
+}
+
+function updatePlayerControllers(){
+    var curPlayerId = 0;
+    for (i in controllers) {
+        var gamepad = controllers[i];
+        if (curPlayerId >= players.length)
+            break;
+        players[curPlayerId].controller = new GamepadController(gamepad);
+        curPlayerId++;
+    }
+}
+
+function addgamepad(gamepad) {
+    controllers[gamepad.index] = gamepad;
+    updatePlayerControllers();
+    console.log("gamepad " + gamepad.index + " connected")
+}
+
+function disconnecthandler(e) {
+    removegamepad(e.gamepad);
+}
+
+function removegamepad(gamepad) {
+    delete controllers[gamepad.index];
+    console.log("gamepad " + gamepad.index + " disconnected")
+    //updatePlayerCotrollers(); do this ? 
+}
+
+
+function scangamepads() {
+    //console.log("scan");
+    var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+    for (var i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) {
+            if (gamepads[i].index in controllers) {
+                controllers[gamepads[i].index] = gamepads[i];
+            } else {
+                addgamepad(gamepads[i]);
+            }
+        }
+    }
+}
+
+
+window.addEventListener("gamepadconnected", connecthandler);
+window.addEventListener("gamepaddisconnected", disconnecthandler);
+
+if (!haveEvents) {
+    setInterval(scangamepads, 500);
+}
+        
