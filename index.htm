@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Gesichtskirmes // Tron Cruise</title>
+		<title>Tron Cruise // Gesichtskirmes</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
@@ -159,7 +159,7 @@
 
 			var maxBulletLifetime = 100000.0;
 			var bulletInvulnTime = 0.5;
-			function spawnBullet(position, direction, material, stand) {
+			function spawnBullet(position, direction, material, stand, creator) {
 				var bullet = new Object();
 				bullet.lifetime = maxBulletLifetime;
 				bullet.velocity = direction.clone();
@@ -176,7 +176,8 @@
 				bullet.mesh.setRotationFromQuaternion(alignResult.rotQuat);
 				bullet.alive = true;
 				bullet.stand = stand;
-				bullet.canCollide = !stand;
+				bullet.canCollideWithCreator = !stand;
+				bullet.creator = creator;
 				bullets[nextBulletIndex] = bullet;
 				nextBulletIndex++;
 				if(nextBulletIndex >= maxBullets) nextBulletIndex = 0;
@@ -201,6 +202,7 @@
 								var collision = false;
 								if (rel.dot(rel) < rad*rad) {
 									collision = true;
+									console.log("trail");
 								} else if (bullet.stand == false) { // a real bullet, not a trail
 									var dir = bullet.velocity.clone().multiplyScalar(dt);
 									var A = dir.dot(dir);
@@ -218,19 +220,21 @@
 									if(collision) {
 										collision = t > 0 && t < 1;
 										if (collision) {
-											console.log("collision!", t);
+											console.log("got shot!");
 										}
 									}
 								}
 								// last created bullet is collision immune
 								if (collision) {
-									if (bullet.live) {
+									if ((bullet.creator != players[j] && bullet.canCollideWithCreator) || !bullet.stand) {
 										players[j].die();
 										bullet.alive = false;
 										scene.remove(bullet.mesh);
 									}
 								} else {
-									bullet.live = true;
+									if (bullet.creator === players[j]) {
+										bullet.canCollideWithCreator = true;
+									}
 								}
 							}
 						}
@@ -257,19 +261,19 @@
 				//pad = navigator.getGamepads()[1];
 
 
-				var player = new Player(1, 1, 0, new KeyboardController());
+				var player = new Player(1, 2, 0, new KeyboardController("a", "d", "w", "s", "v"));
+				player.mesh.position.set(-1000, 0, 0);
+				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
+				players.push(player);
+				scene.add(player.mesh);
+
+				player = new Player(2, 2, 1, new KeyboardController("left", "right", "up", "down", "l"));
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);
 
-				/*var player = new Player(1, 2, 0, new KeyboardController("left", "right", "up", "down", "l"));
-				player.mesh.position.set(1000, 0, 0);
-				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
-				players.push(player);
-				scene.add(player.mesh);
-
-				player = new Player(2, 2, 1, new KeyboardController("a", "d", "w", "s", " space"));
+				/*player = new Player(2, 2, 1, new KeyboardController("a", "d", "w", "s", " space"));
 				player.mesh.position.set(2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);

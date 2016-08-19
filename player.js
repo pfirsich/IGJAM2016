@@ -184,7 +184,7 @@ Player.prototype.update = function(dt) {
         if (this.controller.shoot.state > 0) {
             if (this.nextShot < clock.getElapsedTime() && this.ammo >= 1) {
                 this.nextShot = clock.getElapsedTime() + this.shotInterval;
-                spawnBullet(this.mesh.position, this.velocity, bulletMaterial, false);
+                spawnBullet(this.mesh.position, this.velocity, bulletMaterial, false, this);
 
                 //heatup
                 this.ammo--;
@@ -202,7 +202,7 @@ Player.prototype.update = function(dt) {
         if (this.nextTrail < clock.getElapsedTime()) {
             this.nextTrail = clock.getElapsedTime() + this.trailInterval;
             this.lastCreatedBulletIndex = nextBulletIndex;
-            spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true);
+            spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true, this);
         }
 
         if (Math.abs(this.controller.moveX.state) > 0.1 || Math.abs(this.controller.moveY.state) > 0.1) {
@@ -267,6 +267,7 @@ Player.prototype.update = function(dt) {
             if (rel.dot(rel) < this.radius*this.radius*4) {
                 this.die();
                 other.die();
+                console.log("kamikaze");
             }
         }
     }
