@@ -29,21 +29,21 @@ socket.on('x', function (arr) {
     if (!player.initialFacePosition[0]) {
       player.initialFacePosition = [rX,rY];
     } else {
-      player.maskMesh.rotation.y = (Math.PI/180) * 50 * rY;
+      player.maskMesh.rotation.y = (Math.PI/180) * 70 * rY;
       player.maskMesh.rotation.x = (Math.PI/180) * 70 * rX;
 
       // player.controller.moveY.state = rX.map(-0.3,0.1,1,-1)
       // player.controller.moveX.state = rY.map(-0.2,0.2,1,-1)
 
-      console.log(player.initialFacePosition[0])
+      // console.log(player.initialFacePosition[0])
 
       player.controller.moveY.state = rX.map(
-        player.initialFacePosition[0] - 0.3,
-        player.initialFacePosition[0] + 0.3,
+        player.initialFacePosition[0] - 0.5,
+        player.initialFacePosition[0] + 0.5,
         1,-1)
       player.controller.moveX.state = rY.map(
-        player.initialFacePosition[1] - 0.4,
-        player.initialFacePosition[1] + 0.4,
+        player.initialFacePosition[1] - 0.5,
+        player.initialFacePosition[1] + 0.5,
         1,-1)
     }
 

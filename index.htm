@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Gesichtskirmes // Tron Cruise</title>
+		<title>Tron Cruise // Gesichtskirmes</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
@@ -161,7 +161,7 @@
 
 			var maxBulletLifetime = 100000.0;
 			var bulletInvulnTime = 0.5;
-			function spawnBullet(position, direction, material, stand) {
+			function spawnBullet(position, direction, material, stand, creator) {
 				var bullet = new Object();
 				bullet.lifetime = maxBulletLifetime;
 				bullet.velocity = direction.clone();
@@ -178,6 +178,8 @@
 				bullet.mesh.setRotationFromQuaternion(alignResult.rotQuat);
 				bullet.alive = true;
 				bullet.stand = stand;
+				bullet.canCollideWithCreator = !stand;
+				bullet.creator = creator;
 				bullets[nextBulletIndex] = bullet;
 				nextBulletIndex++;
 				if(nextBulletIndex >= maxBullets) nextBulletIndex = 0;
@@ -219,15 +221,20 @@
 									if(collision) {
 										collision = t > 0 && t < 1;
 										if (collision) {
-											console.log("collision!", t);
+											console.log("got shot!");
 										}
 									}
 								}
+								// last created bullet is collision immune
 								if (collision) {
-									if (!bullet.stand || maxBulletLifetime - bullet.lifetime > bulletInvulnTime) {
+									if ((bullet.creator != players[j] && bullet.canCollideWithCreator) || !bullet.stand) {
 										players[j].die();
 										bullet.alive = false;
 										scene.remove(bullet.mesh);
+									}
+								} else {
+									if (bullet.creator === players[j]) {
+										bullet.canCollideWithCreator = true;
 									}
 								}
 							}
@@ -255,13 +262,22 @@
 				//pad = navigator.getGamepads()[1];
 
 
-				var player = new Player(1, 2, 0, new KeyboardController());
+
+				var player = new Player(2, 2, 0, new KeyboardController("a", "d", "w", "s", "v"));
+				// var player = new Player(2, 2, 0, new FaceController("x"));
+				player.mesh.position.set(-1000, 0, 0);
+				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
+				players.push(player);
+				scene.add(player.mesh);
+
+				player = new Player(1, 2, 1, new KeyboardController());
+				// player = new Player(1, 2, 1, new FaceController("l"));
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);
 
-				player = new Player(2, 2, 1, new KeyboardController("a", "d", "w", "s", " space"));
+				/*player = new Player(2, 2, 1, new KeyboardController("a", "d", "w", "s", " space"));
 				player.mesh.position.set(2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
@@ -364,9 +380,9 @@
 					renderer.render(scene, players[i].camera);
 					renderer.render(players[i].hudScene, players[i].hudCamera);
 
-					// var mp = players[i].maskViewport;
-					// renderer.setViewport(mp.x, mp.y, mp.width, mp.height);
-					// renderer.render(players[i].maskScene, players[i].maskCamera);
+					var mp = players[i].maskViewport;
+					renderer.setViewport(mp.x, mp.y, mp.width, mp.height);
+					renderer.render(players[i].maskScene, players[i].maskCamera);
 				}
 				renderer.setScissorTest(false);
 

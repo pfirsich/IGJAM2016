@@ -52,7 +52,7 @@ function getViewport(index, number) {
 function getMaskViewport(index, number) {
     var w = window.innerWidth, h = window.innerHeight;
     if (number == 2) {
-        if (index == 1) {
+        if (index == 2) {
             return {x: 0, y: h/2, width: 250, height: h/2};
         } else {
             return {x: w-250, y: 0, width: 250, height: h/2};
@@ -135,29 +135,34 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     //engine
     this.engineSoundId = sounds.engine.play();
 
-    // this.maskViewport = getMaskViewport(viewportIndex, playerCount);
-    // this.maskCamera = new THREE.PerspectiveCamera(120, this.maskViewport.width/this.maskViewport.height, 2, 1000);
-    // this.maskScene = new THREE.Scene();
-    // this.maskMaterial = new THREE.MeshBasicMaterial({
-    //   side: THREE.DoubleSide,
-    //   transparent: true,
-    //   opacity: 0.1,
-    //   map: texLoader.load("v.png"),
-    //   depthTest: false,
-    //   depthWrite: false
-    // });
-    // var maskGeometry = new THREE.PlaneGeometry(256, 512);
-    // this.maskMesh = new THREE.Mesh(maskGeometry, this.maskMaterial);
-    // this.maskMesh.scale.x = 0.3;
-    // this.maskMesh.scale.y = 0.3;
-    // this.maskMesh.position.x = 0;
-    // this.maskMesh.position.y = 0;
-    // this.maskMesh.position.z = 0;
-    // this.maskCamera.position.x = 0;
-    // this.maskCamera.position.z = 50;
-    // // this.maskMesh.position.y = window.innerHeight/2 - 80;
-    // // this.maskMesh.rotation.z = (Math.PI/180) * 180;
-    // this.maskScene.add(this.maskMesh);
+    this.maskViewport = getMaskViewport(viewportIndex, playerCount);
+    this.maskCamera = new THREE.PerspectiveCamera(40, this.maskViewport.width/this.maskViewport.height, 2, 1000);
+    this.maskScene = new THREE.Scene();
+    this.maskMaterial = new THREE.MeshBasicMaterial({
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.1,
+      map: texLoader.load("cruise.png"),
+      depthTest: false,
+      depthWrite: false
+    });
+
+    var maskGeometry = new THREE.PlaneGeometry(256, 512);
+    this.maskMesh = new THREE.Mesh(maskGeometry, this.maskMaterial);
+    this.maskMesh.scale.y = 0.3;
+    if (viewportIndex == 2) {
+        this.maskMesh.scale.x = 0.3;
+    } else {
+        this.maskMesh.scale.x = -0.3;
+    }
+    this.maskMesh.position.x = 0;
+    this.maskMesh.position.y = 0;
+    this.maskMesh.position.z = 0;
+    this.maskCamera.position.x = 0;
+    this.maskCamera.position.z = 300;
+    // this.maskMesh.position.y = window.innerHeight/2 - 80;
+    // this.maskMesh.rotation.z = (Math.PI/180) * 180;
+    this.maskScene.add(this.maskMesh);
 
     this.initialFacePosition = []
 
@@ -223,7 +228,7 @@ Player.prototype.update = function(dt) {
         if (this.controller.shoot.state > 0) {
             if (this.nextShot < clock.getElapsedTime() && this.ammo >= 1) {
                 this.nextShot = clock.getElapsedTime() + this.shotInterval;
-                spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true);
+                spawnBullet(this.mesh.position, this.velocity, bulletMaterial, false, this);
 
                 //heatup
                 this.ammo--;
@@ -240,7 +245,8 @@ Player.prototype.update = function(dt) {
 
         if (this.nextTrail < clock.getElapsedTime()) {
             this.nextTrail = clock.getElapsedTime() + this.trailInterval;
-            spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true);
+            this.lastCreatedBulletIndex = nextBulletIndex;
+            spawnBullet(this.mesh.position, this.velocity, this.trailMaterial, true, this);
         }
 
         if (Math.abs(this.controller.moveX.state) > 0.1 || Math.abs(this.controller.moveY.state) > 0.1) {
@@ -305,6 +311,7 @@ Player.prototype.update = function(dt) {
             if (rel.dot(rel) < this.radius*this.radius*4) {
                 this.die();
                 other.die();
+                console.log("kamikaze");
             }
         }
     }
