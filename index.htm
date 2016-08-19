@@ -52,13 +52,35 @@
 
 			var scene, renderer;
 
+			var texLoader = new THREE.TextureLoader();
+			var jsonLoader = new THREE.JSONLoader();
+
 			var maxBullets = 2048, nextBulletIndex = 0, bullets = new Array(maxBullets);
-			var bulletGeometry = new THREE.BoxGeometry(40, 40, 150);
+			var bulletGeometry = new THREE.BoxGeometry(40, 40, 200);
 			var bulletMaterial = new THREE.MeshPhongMaterial( {
 					color: 0xffff00,
 					emissive: 0xffff00,
 					shading: THREE.FlatShading
 				});
+
+			var skyboxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
+			var skyboxMaterial = new THREE.MeshBasicMaterial({
+				map: texLoader.load("skybox.png"),
+				color: 0xffffff,
+				depthWrite: false,
+				depthTest: false,
+				side: THREE.DoubleSide
+			})
+			var skyboxMesh = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+			var skyboxScene = new THREE.Scene();
+			skyboxScene.add(skyboxMesh);
+			jsonLoader.load("skybox.json", function(geometry) {
+				skyboxScene.remove(skyboxMesh);
+				skyboxMesh = new THREE.Mesh(geometry, skyboxMaterial);
+				skyboxMesh.scale.set(1000, 1000, 1000);
+				skyboxScene.add(skyboxMesh);
+				console.log("updated");
+			});
 
 			var terrain, light;
 
@@ -72,8 +94,6 @@
 			var sunDir = new THREE.Vector3(0.6, 1, 0.6);
 			sunDir.normalize();
 
-			var texLoader = new THREE.TextureLoader();
-			var jsonLoader = new THREE.JSONLoader();
 
 			/*var resourcesToLoad = 0;
 			var resourcesLoaded = 0;
@@ -112,7 +132,7 @@
         </script>
         <script>
 
-        </script>   
+        </script>
 
 		<script src="terrain.js"></script>
 		<script src="input.js"></script>
@@ -228,20 +248,18 @@
 
 				terrain = new Terrain(60000, 60000, worldWidth - 1, worldDepth - 1);
 				scene.add(terrain.mesh);
-                
+
                 //console.log(gamepads);
 				//pad = navigator.getGamepads()[1];
 
 
-				/*var player = new Player(1, 1, 0, new KeyboardController());
+				var player = new Player(1, 1, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);*/
+				scene.add(player.mesh);
 
-
-
-				var player = new Player(1, 2, 0, new KeyboardController("left", "right", "up", "down", "l"));
+				/*var player = new Player(1, 2, 0, new KeyboardController("left", "right", "up", "down", "l"));
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
@@ -251,7 +269,7 @@
 				player.mesh.position.set(2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);
+				scene.add(player.mesh);*/
 
 				/*player = new Player(3, 4, 2, new KeyboardController());
 				player.mesh.position.set(-1000, 0, 0);
@@ -345,6 +363,8 @@
 					var vp = players[i].viewport;
 					renderer.setScissor(vp.x, vp.y, vp.width, vp.height);
 					renderer.setViewport(vp.x, vp.y, vp.width, vp.height);
+					skyboxMesh.position.copy(players[i].camera.position);
+					renderer.render(skyboxScene, players[i].camera);
 					renderer.render(scene, players[i].camera);
 					renderer.render(players[i].hudScene, players[i].hudCamera);
 				}
