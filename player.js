@@ -101,6 +101,15 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.crosshairMeshFar.scale.set(0.5, 0.5, 0.5);
     this.hudScene.add(this.crosshairMeshNear);
     this.hudScene.add(this.crosshairMeshFar);
+    
+    //html overlay
+    var alert = document.createElement("h2");
+    alert.innerHTML = "t";
+    alert.style.position = "absolute";
+    alert.style.fontSize = "500%";
+    alert.style.left = (this.viewport.x + this.viewport.width / 2) + "px";
+    alert.style.top = (this.viewport.y + this.viewport.height / 2) + "px";
+    document.getElementsByTagName("body")[0].appendChild(alert);
 
     // particle system
     this.particleGroup = new THREE.Object3D();
