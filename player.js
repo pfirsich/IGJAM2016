@@ -104,12 +104,13 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     
     //html overlay
     var alert = document.createElement("h2");
-    alert.innerHTML = "t";
+    alert.innerHTML = "";
     alert.style.position = "absolute";
     alert.style.fontSize = "500%";
     alert.style.left = (this.viewport.x + this.viewport.width / 2) + "px";
-    alert.style.top = (this.viewport.y + this.viewport.height / 2) + "px";
+    alert.style.bottom = (this.viewport.y + this.viewport.height / 2) + "px";
     document.getElementsByTagName("body")[0].appendChild(alert);
+    this.alert = alert;
 
     // particle system
     this.particleGroup = new THREE.Object3D();
@@ -131,6 +132,7 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
 
     //engine
     this.engineSoundId = sounds.engine.play();
+
 }
 
 Player.prototype.applyGeometryWhenReady = function() {
@@ -365,4 +367,20 @@ Player.prototype.die = function() {
     this.angle = 0;
     sounds.explosion.rate(Math.random()*0.2-0.1 + 0.9);
     sounds.explosion.play();
+    this.alert.innerHTML = "game over";
+    
+    var someoneAlive = false;
+    
+    for(var i = 0; i < players.length; ++i) {
+        if (this.alive) {
+            someoneAlive = true;
+            break
+        }
+    }
+    if (!someoneAlive)
+    {
+        setTimeout(function() {
+                   location.reload();
+                   }, 3000);
+    }
 }
