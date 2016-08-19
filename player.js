@@ -101,7 +101,7 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.crosshairMeshFar.scale.set(0.5, 0.5, 0.5);
     this.hudScene.add(this.crosshairMeshNear);
     this.hudScene.add(this.crosshairMeshFar);
-    
+
     //html overlay
     var alert = document.createElement("h2");
     alert.innerHTML = "";
@@ -367,20 +367,5 @@ Player.prototype.die = function() {
     this.angle = 0;
     sounds.explosion.rate(Math.random()*0.2-0.1 + 0.9);
     sounds.explosion.play();
-    this.alert.innerHTML = "game over";
-    
-    var someoneAlive = false;
-    
-    for(var i = 0; i < players.length; ++i) {
-        if (this.alive) {
-            someoneAlive = true;
-            break
-        }
-    }
-    if (!someoneAlive)
-    {
-        setTimeout(function() {
-                   location.reload();
-                   }, 3000);
-    }
+    this.alert.innerHTML = "game over - press space to reload";
 }

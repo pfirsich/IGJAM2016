@@ -318,7 +318,7 @@
 				container.appendChild( stats.dom );
 
 				window.addEventListener( 'resize', onWindowResize, false );
-                
+
                 //overlay
                 winners = 0;
 
@@ -355,6 +355,16 @@
 					render();
 					stats.update();
 				//}
+
+			    var someoneDead = false;
+
+			    for(var i = 0; i < players.length; ++i) {
+			        if (!players[i].alive) someoneDead = true;
+			    }
+
+			    if (keyboard.pressed("space") && someoneDead) {
+			    	location.reload();
+			    }
 			}
 
 			function render() {
