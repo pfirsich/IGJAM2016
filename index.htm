@@ -131,9 +131,7 @@
 				var rotQuat = new THREE.Quaternion().setFromRotationMatrix(rotMat);
 				rotQuat.normalize();
 
-				mesh.setRotationFromQuaternion(rotQuat);
-
-				return rotMat;
+				return {rotMat: rotMat, rotQuat: rotQuat};
 			}
 
 			var maxBulletLifetime = 100000.0;
@@ -151,7 +149,8 @@
 				scene.add(bullet.mesh);
 				bullet.mesh.castShadow = true;
 				bullet.mesh.position.copy(position);
-				alignAlongVector(bullet.mesh, direction);
+				var alignResult = alignAlongVector(bullet.mesh, direction);
+				bullet.mesh.setRotationFromQuaternion(alignResult.rotQuat);
 				bullet.alive = true;
 				bullet.stand = stand;
 				bullets[nextBulletIndex] = bullet;
@@ -174,39 +173,36 @@
 							bullet.mesh.position.add(deltaPos);
 
 							for (var j = 0; j < players.length; ++j) {
-								if(players[j].alive) {
-									var rel = bullet.mesh.position.clone().sub(players[j].mesh.position);
-									var collision = false;
-									if (rel.dot(rel) < rad*rad) {
+								var rel = bullet.mesh.position.clone().sub(players[j].mesh.position);
+								var collision = false;
+								if (rel.dot(rel) < rad*rad) {
+									collision = true;
+								} else if (bullet.stand == false) { // a real bullet, not a trail
+									var dir = bullet.velocity.clone().multiplyScalar(dt);
+									var A = dir.dot(dir);
+									var B = 2 * rel.dot(dir);
+									// theres some leeway for non-trail-bullets
+									var C = rel.dot(rel) - players[j].radius*players[j].radius*1.5;
+									var root = Math.sqrt(B*B - 4*A*C)
+									var t = (-B - root) / 2 / A;
+									if (t > 0) {
 										collision = true;
-									} else if (bullet.stand == false) { // a real bullet, not a trail
-										var vel = bullet.velocity.clone();
-										vel.multiplyScalar(dt);
-										var A = vel.dot(vel);
-										var B = 2 * rel.dot(vel);
-										// theres some leeway for non-trail-bullets
-										var C = rel.dot(rel) - players[j].radius*players[j].radius*1.5;
-										var root = Math.sqrt(B*B - 4*C)
-										var t = (-B - root) / 2;
-										if (t > 0) {
-											collision = true;
-										} else {
-											t = (-B + root) / 2;
-											if (t > 0) collision = true;
-										}
-										if(collision) {
-											collision = t > 0 && t < 1;
-											if (collision) {
-												console.log("collision!", t);
-											}
+									} else {
+										t = (-B + root) / 2 / A;
+										if (t > 0) collision = true;
+									}
+									if(collision) {
+										collision = t > 0 && t < 1;
+										if (collision) {
+											console.log("collision!", t);
 										}
 									}
-									if (collision) {
-										if (maxBulletLifetime - bullet.lifetime > bulletInvulnTime) {
-											players[j].die();
-											bullet.alive = false;
-											scene.remove(bullet.mesh);
-										}
+								}
+								if (collision) {
+									if (!bullet.stand || maxBulletLifetime - bullet.lifetime > bulletInvulnTime) {
+										players[j].die();
+										bullet.alive = false;
+										scene.remove(bullet.mesh);
 									}
 								}
 							}
@@ -227,7 +223,7 @@
 
 				scene = new THREE.Scene();
 
-				terrain = new Terrain(30000, 30000, worldWidth - 1, worldDepth - 1);
+				terrain = new Terrain(60000, 60000, worldWidth - 1, worldDepth - 1);
 				scene.add(terrain.mesh);
 
 				//console.log(navigator.getGamepads());
@@ -241,19 +237,19 @@
 				scene.add(player.mesh);*/
 
 
-				var player = new Player(1, 4, 0, new KeyboardController());
+				var player = new Player(1, 2, 0, new KeyboardController("left", "right", "up", "down", "l"));
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);
 
-				player = new Player(2, 4, 1, new KeyboardController());
+				player = new Player(2, 2, 1, new KeyboardController("a", "d", "w", "s", " space"));
 				player.mesh.position.set(2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
 				scene.add(player.mesh);
 
-				player = new Player(3, 4, 2, new KeyboardController());
+				/*player = new Player(3, 4, 2, new KeyboardController());
 				player.mesh.position.set(-1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
@@ -263,11 +259,14 @@
 				player.mesh.position.set(-2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);
+				scene.add(player.mesh);*/
+
+				var ambient = new THREE.AmbientLight(0x101010);
+				scene.add(ambient);
 
 				light = new THREE.DirectionalLight(0xffe0b3);
-				light.castShadow = true;
-				var shadowVolumeSize = 4000;
+				//light.castShadow = true;
+				var shadowVolumeSize = 15000;
 				light.shadow.camera.near = 10;
 				light.shadow.camera.far = 20000;
 				light.shadow.camera.left = -shadowVolumeSize;
@@ -340,7 +339,7 @@
 				renderer.setScissorTest(true);
 				for(var i = 0; i < players.length; ++i) {
 					var vp = players[i].viewport;
-					//renderer.setScissor(vp.x, vp.y, vp.width, vp.height);
+					renderer.setScissor(vp.x, vp.y, vp.width, vp.height);
 					renderer.setViewport(vp.x, vp.y, vp.width, vp.height);
 					renderer.render(scene, players[i].camera);
 					renderer.render(players[i].hudScene, players[i].hudCamera);

@@ -79,6 +79,7 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.cameraModifier = 0.0;
     this.controller = controller;
     this.alive = true;
+    this.roll = 0;
 
     this.trailMaterial = new THREE.MeshBasicMaterial({color: playerColors[colorIndex]});
 
@@ -129,7 +130,7 @@ Player.prototype.applyGeometryWhenReady = function() {
         console.log(that, that.mesh);
         scene.remove(that.mesh);
         var newMesh = new THREE.Mesh(geometry, that.material);
-        var shipScale = 100.0;
+        var shipScale = 150.0;
         newMesh.scale.set(shipScale, shipScale, shipScale);
         newMesh.position.copy(that.mesh.position);
         newMesh.castShadow = true;
@@ -142,7 +143,12 @@ Player.prototype.applyGeometryWhenReady = function() {
 Player.prototype.update = function(dt) {
     this.controller.update();
 
-    var rotMat = alignAlongVector(this.mesh, this.velocity);
+    var alignResult = alignAlongVector(this.mesh, this.velocity);
+    this.mesh.setRotationFromQuaternion(alignResult.rotQuat);
+    var angle = this.roll * -Math.PI/4.0
+    var quat = alignResult.rotQuat.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle));
+    this.mesh.setRotationFromQuaternion(quat);
+    var rotMat = alignResult.rotMat; //alignAlongVector(this.mesh, this.velocity);
 
     var angleDist = 0.0;
     if (this.alive) {
@@ -206,6 +212,19 @@ Player.prototype.update = function(dt) {
             if (this.cameraModifier < 0.0) this.cameraModifier = 0.0;
         }
 
+        var rollSpeed = 2.0;
+        if (Math.abs(this.controller.moveX.state) > 0.1) {
+            if (this.controller.moveX.state > 0) {
+                this.roll += dt * rollSpeed;
+            } else {
+                this.roll -= dt * rollSpeed;
+            }
+        } else {
+            if (this.roll > 0.0) this.roll -= dt * rollSpeed;
+            if (this.roll < 0.0) this.roll += dt * rollSpeed;
+        }
+        this.roll = Math.max(Math.min(this.roll, 1.0), -1.0);
+
         // update camera
         var playerVelocity = this.velocity.clone();
         playerVelocity.normalize();
@@ -238,6 +257,17 @@ Player.prototype.update = function(dt) {
 
         this.mesh.setRotationFromAxisAngle(this.rotAxis, this.angle);
         this.camera.lookAt(this.mesh.position);
+    }
+
+    for(var i = 0; i < players.length; ++i) {
+        if(i > players.indexOf(this)) {
+            var other = players[i];
+            var rel = other.mesh.position.clone().sub(this.mesh.position);
+            if (rel.dot(rel) < this.radius*this.radius*4) {
+                this.die();
+                other.die();
+            }
+        }
     }
 
 
