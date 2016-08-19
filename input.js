@@ -37,6 +37,21 @@ KeyboardController.prototype.update = function() {
     this.accelerate.update();
 }
 
+function FaceController(left, right, up, down, shoot) {
+    this.moveX = new Input(function() {return 0});
+    this.moveY = new Input(function() {return 0});
+    this.shoot = new Input(function() {return keyboard.pressed(left) ? 1.0 : 0.0});
+    // this.shoot = new Input(function() {return 1});
+    this.accelerate = new Input(function() {return 0});
+}
+
+FaceController.prototype.update = function() {
+    // this.moveX.update();
+    // this.moveY.update();
+    this.shoot.update();
+    this.accelerate.update();
+}
+
 function DummyController() {
     this.moveX = new Input(function(){return 0;});
     this.moveY = new Input(function(){return 0;});
@@ -94,7 +109,7 @@ function disconnecthandler(e) {
 function removegamepad(gamepad) {
     delete connectedGamepads[gamepad.index];
     console.log("gamepad " + gamepad.index + " disconnected")
-    //updatePlayerCotrollers(); do this ? 
+    //updatePlayerCotrollers(); do this ?
 }
 
 
@@ -120,4 +135,4 @@ window.addEventListener("gamepaddisconnected", disconnecthandler);
 if (!haveEvents) {
     setInterval(scangamepads, 500);
 }*/
-        
+
