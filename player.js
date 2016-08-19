@@ -17,6 +17,7 @@ console.log("no");*/
 var playerColors = [0x1560ff, 0x15ff60, 0xff1560, 0xff8015];
 
 function getViewport(index, number) {
+    console.log(index, number)
     var w = window.innerWidth, h = window.innerHeight;
     if (number > 4) {
         console.log("No more than 4 players!");
@@ -44,6 +45,17 @@ function getViewport(index, number) {
             return {x: 0, y: h/2, width: w/2, height: h/2};
         } else if (index == 4) {
             return {x: w/2, y: h/2, width: w/2, height: h/2};
+        }
+    }
+}
+
+function getMaskViewport(index, number) {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (number == 2) {
+        if (index == 2) {
+            return {x: 0, y: h/2, width: 250, height: h/2};
+        } else {
+            return {x: w-250, y: 0, width: 250, height: h/2};
         }
     }
 }
@@ -122,6 +134,38 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
 
     //engine
     this.engineSoundId = sounds.engine.play();
+
+    this.maskViewport = getMaskViewport(viewportIndex, playerCount);
+    this.maskCamera = new THREE.PerspectiveCamera(40, this.maskViewport.width/this.maskViewport.height, 2, 1000);
+    this.maskScene = new THREE.Scene();
+    this.maskMaterial = new THREE.MeshBasicMaterial({
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.1,
+      map: texLoader.load("cruise.png"),
+      depthTest: false,
+      depthWrite: false
+    });
+
+    var maskGeometry = new THREE.PlaneGeometry(256, 512);
+    this.maskMesh = new THREE.Mesh(maskGeometry, this.maskMaterial);
+    this.maskMesh.scale.y = 0.3;
+    if (viewportIndex == 2) {
+        this.maskMesh.scale.x = 0.3;
+    } else {
+        this.maskMesh.scale.x = -0.3;
+    }
+    this.maskMesh.position.x = 0;
+    this.maskMesh.position.y = 0;
+    this.maskMesh.position.z = 0;
+    this.maskCamera.position.x = 0;
+    this.maskCamera.position.z = 300;
+    // this.maskMesh.position.y = window.innerHeight/2 - 80;
+    // this.maskMesh.rotation.z = (Math.PI/180) * 180;
+    this.maskScene.add(this.maskMesh);
+
+    this.initialFacePosition = []
+
 }
 
 Player.prototype.applyGeometryWhenReady = function() {
