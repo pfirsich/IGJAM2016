@@ -65,15 +65,22 @@
 
 			var skyboxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
 			var skyboxMaterial = new THREE.MeshBasicMaterial({
-				//map: texLoader.load("crosshair.png"),
-				color: 0xff0000,
+				map: texLoader.load("skybox.png"),
+				color: 0xffffff,
 				depthWrite: false,
 				depthTest: false,
-				side: THREE.BackSide
+				side: THREE.DoubleSide
 			})
 			var skyboxMesh = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
 			var skyboxScene = new THREE.Scene();
 			skyboxScene.add(skyboxMesh);
+			jsonLoader.load("skybox.json", function(geometry) {
+				skyboxScene.remove(skyboxMesh);
+				skyboxMesh = new THREE.Mesh(geometry, skyboxMaterial);
+				skyboxMesh.scale.set(1000, 1000, 1000);
+				skyboxScene.add(skyboxMesh);
+				console.log("updated");
+			});
 
 			var terrain, light;
 
@@ -243,14 +250,14 @@
 				//pad = navigator.getGamepads()[1];
 
 
-				/*var player = new Player(1, 1, 0, new KeyboardController());
+				var player = new Player(1, 1, 0, new KeyboardController());
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);*/
+				scene.add(player.mesh);
 
 
-				var player = new Player(1, 2, 0, new KeyboardController("left", "right", "up", "down", "l"));
+				/*var player = new Player(1, 2, 0, new KeyboardController("left", "right", "up", "down", "l"));
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
@@ -260,7 +267,7 @@
 				player.mesh.position.set(2000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
 				players.push(player);
-				scene.add(player.mesh);
+				scene.add(player.mesh);*/
 
 				/*player = new Player(3, 4, 2, new KeyboardController());
 				player.mesh.position.set(-1000, 0, 0);
