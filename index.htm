@@ -218,7 +218,8 @@
 										}
 									}
 								}
-								if (collision) {
+								// last created bullet is collision immune
+								if (collision && players[j].lastCreatedBulletIndex != i) {
 									if (!bullet.stand || maxBulletLifetime - bullet.lifetime > bulletInvulnTime) {
 										players[j].die();
 										bullet.alive = false;
