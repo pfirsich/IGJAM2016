@@ -74,8 +74,6 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.focusPointDistance = this.speed;
     this.focusPointMaxDistance = this.speed * 10.0;
     this.velocity.multiplyScalar(this.speed);
-    this.nextShot = clock.getElapsedTime();
-    this.shotInterval = 0.15;
     this.nextTrail = clock.getElapsedTime();
     this.trailInterval = 0.05;
     this.cameraModifier = 0.0;
@@ -113,6 +111,16 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
         blending: THREE["AdditiveBlending"],
     });
     this.particles = [];
+
+    //shooting logic
+    this.nextShot = clock.getElapsedTime();
+    this.ammo = 0;
+    this.ammoRecharge = 3.0; //per second
+    this.ammoMax = 12;
+    this.shotInterval = 0.15;
+
+    //engine
+    this.engineSoundId = sounds.engine.play();
 }
 
 Player.prototype.applyGeometryWhenReady = function() {
@@ -148,6 +156,7 @@ Player.prototype.update = function(dt) {
             this.spark(20);
             this.mesh.position.setY(terrainHeight);
             this.velocity.add(new THREE.Vector3(0, 200, 0));
+            [sounds.ground1, sounds.ground2, sounds.ground3][Math.floor(Math.random()*3)].play();
         }
 
         if (Math.abs(this.controller.accelerate.state) > 0.1) {
@@ -162,12 +171,27 @@ Player.prototype.update = function(dt) {
         velDt.multiplyScalar(dt);
         this.mesh.position = this.mesh.position.add(velDt);
 
+        this.ammo += dt * this.ammoRecharge;
+        if (this.ammo > this.ammoMax)
+            this.ammo = this.ammoMax;
+
         if (this.controller.shoot.state > 0) {
-            if (this.nextShot < clock.getElapsedTime()) {
+            if (this.nextShot < clock.getElapsedTime() && this.ammo >= 1) {
                 this.nextShot = clock.getElapsedTime() + this.shotInterval;
                 spawnBullet(this.mesh.position, this.velocity, bulletMaterial, false);
+
+                //heatup
+                this.ammo--;
+
+                //sound
+                sounds.shoot2.rate(1.0 + (Math.random()*2.0-1.0) * 0.3);
+                sounds.shoot2.play();
             }
-        }
+        } /*else {
+            this.ammo += dt * this.ammoRecharge;
+            if (this.ammo > this.ammoMax)
+                this.ammo = this.ammoMax;
+        }*/
 
         if (this.nextTrail < clock.getElapsedTime()) {
             this.nextTrail = clock.getElapsedTime() + this.trailInterval;
@@ -199,7 +223,11 @@ Player.prototype.update = function(dt) {
 
         var terrainHeight = terrain.getHeight(this.mesh.position.x, this.mesh.position.z);
         if (this.mesh.position.y < terrainHeight) {
-            if (this.velocity.length() > 50) this.spark(400);
+            if (this.velocity.length() > 50) {
+                this.spark(400);
+                sounds.explosion.rate(1.0 + Math.random());
+                sounds.explosion.play();
+            }
             this.velocity = new THREE.Vector3(0, 0, 0);
             this.mesh.position.setY(terrainHeight);
         }
@@ -223,6 +251,9 @@ Player.prototype.update = function(dt) {
     var terrainHeight = terrain.getHeight(this.camera.position.x, this.camera.position.z);
     if (this.camera.position.y < terrainHeight) {
         this.camera.position.y = terrainHeight + this.camera.terrainOffset;
+
+        //[sounds.ground1, sounds.ground2, sounds.ground3][Math.floor(Math.random() * 3)].play(); // :D
+        //console.log([1, 2, 3][Math.floor(Math.random() * 3)]);
     }
 
     light.target = this.camera;
@@ -252,6 +283,14 @@ Player.prototype.update = function(dt) {
         var scale = particle.mesh.scale.x * Math.pow(0.6, dt);
         particle.mesh.scale.set(scale, scale, scale);
         particle.velocity.multiplyScalar(Math.pow(0.1, dt));
+    }
+
+    //engine sound
+    //console.log(sounds.engine);
+    if (this.alive) {
+        sounds.engine.volume(0.2 + 0.6 * this.cameraModifier, this.engineSoundId);
+    } else {
+        sounds.engine.stop(this.engineSoundId);
     }
 }
 
@@ -285,4 +324,6 @@ Player.prototype.die = function() {
     this.rotAxis = new THREE.Vector3(Math.random(), Math.random(), Math.random());
     this.rotAxis.multiplyScalar(2.0).sub(new THREE.Vector3(-1, -1, -1)).normalize();
     this.angle = 0;
+    sounds.explosion.rate(Math.random()*0.2-0.1 + 0.9);
+    sounds.explosion.play();
 }
