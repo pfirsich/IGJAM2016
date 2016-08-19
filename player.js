@@ -102,6 +102,16 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.hudScene.add(this.crosshairMeshNear);
     this.hudScene.add(this.crosshairMeshFar);
 
+    //html overlay
+    var alert = document.createElement("h2");
+    alert.innerHTML = "";
+    alert.style.position = "absolute";
+    alert.style.fontSize = "500%";
+    alert.style.left = (this.viewport.x + this.viewport.width / 2) + "px";
+    alert.style.bottom = (this.viewport.y + this.viewport.height / 2) + "px";
+    document.getElementsByTagName("body")[0].appendChild(alert);
+    this.alert = alert;
+
     // particle system
     this.particleGroup = new THREE.Object3D();
     this.particleMesh = new THREE.BoxGeometry(40, 40, 40);
@@ -122,6 +132,7 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
 
     //engine
     this.engineSoundId = sounds.engine.play();
+
 }
 
 Player.prototype.applyGeometryWhenReady = function() {
@@ -358,4 +369,5 @@ Player.prototype.die = function() {
     this.angle = 0;
     sounds.explosion.rate(Math.random()*0.2-0.1 + 0.9);
     sounds.explosion.play();
+    this.alert.innerHTML = "game over - press space to reload";
 }
