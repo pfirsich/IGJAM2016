@@ -1,4 +1,4 @@
-# Tron Cruise -- Gesichtskirmes
+# Tron Cruise
 
 This game was made for IGJAM 2016 at gamescom. - Theme: **MASKS**
 
