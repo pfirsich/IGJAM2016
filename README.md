@@ -16,5 +16,7 @@ To try, just download a zip of the repository and open index.html in your browse
 
 ## Credits
 Nils Gawlik - Programming, Art
+
 John Reed - Programming
+
 Joel Schumacher - Programming, definitely Art - http://theshoemaker.de
