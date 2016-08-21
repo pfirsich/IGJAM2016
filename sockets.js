@@ -14,7 +14,15 @@ Number.prototype.map = function (in_min, in_max, out_min, out_max) {
   return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+var firstOn = true;
 socket.on('x', function (arr) {
+
+  if (firstOn) {
+    for(var i = 0; i < players.length; ++i) {
+      //players[i].controller = new Player(2, 2, 0, new FaceController("x"));
+    }
+    firstOn = false;
+  }
 
   // console.log(arr.length)
 

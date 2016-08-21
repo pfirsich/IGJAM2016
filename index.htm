@@ -261,8 +261,6 @@
                 //console.log(gamepads);
 				//pad = navigator.getGamepads()[1];
 
-
-
 				var player = new Player(2, 2, 0, new KeyboardController("a", "d", "w", "s", "v"));
 				// var player = new Player(2, 2, 0, new FaceController("x"));
 				player.mesh.position.set(-1000, 0, 0);
@@ -270,7 +268,7 @@
 				players.push(player);
 				scene.add(player.mesh);
 
-				player = new Player(1, 2, 1, new KeyboardController());
+				player = new Player(1, 2, 1, new KeyboardController("left", "right", "up", "down", "l"));
 				// player = new Player(1, 2, 1, new FaceController("l"));
 				player.mesh.position.set(1000, 0, 0);
 				player.mesh.position.y = terrain.getHeight(player.mesh.position.x, player.mesh.position.z) + 100;
@@ -331,6 +329,9 @@
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
+                //overlay
+                winners = 0;
+
 				initialized = true;
 			}
 
@@ -364,6 +365,16 @@
 					render();
 					stats.update();
 				//}
+
+			    var someoneDead = false;
+
+			    for(var i = 0; i < players.length; ++i) {
+			        if (!players[i].alive) someoneDead = true;
+			    }
+
+			    if (keyboard.pressed("space") && someoneDead) {
+			    	location.reload();
+			    }
 			}
 
 			function render() {
