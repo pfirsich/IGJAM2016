@@ -115,14 +115,34 @@ function Player(viewportIndex, playerCount, colorIndex, controller) {
     this.hudScene.add(this.crosshairMeshFar);
 
     //html overlay
-    var alert = document.createElement("h2");
-    alert.innerHTML = "";
-    alert.style.position = "absolute";
-    alert.style.fontSize = "500%";
-    alert.style.left = (this.viewport.x + this.viewport.width / 2) + "px";
-    alert.style.bottom = (this.viewport.y + this.viewport.height / 2) + "px";
-    document.getElementsByTagName("body")[0].appendChild(alert);
-    this.alert = alert;
+    var viewportDiv = document.createElement("div");
+    viewportDiv.id = "playerviewport-" + playerColors[colorIndex].toString(16)
+    viewportDiv.innerHTML = "";
+    viewportDiv.style.position = "absolute";
+    viewportDiv.style.width = this.viewport.width + "px";
+    viewportDiv.style.height = this.viewport.height + "px";
+    viewportDiv.style.left = this.viewport.x + "px";
+    // I think 'bottom' is wrong here, but I do not intend to spend too much time on this
+    viewportDiv.style.bottom = this.viewport.y + "px";
+    viewportDiv.textAlign = "center";
+    viewportDiv.verticalAlign = "middle";
+    viewportDiv.style.fontSize = "500%";
+    document.getElementsByTagName("body")[0].appendChild(viewportDiv);
+    this.alert = viewportDiv
+
+    var controls = document.createElement("div");
+    controls.innerHTML = this.controller.upKey + ", " + this.controller.leftKey + ", " +
+        this.controller.downKey + ", " + this.controller.rightKey +
+        " to move, " + this.controller.shootKey + "  to shoot";
+    controls.style.position = "relative";
+    controls.style.right = "0px";
+    controls.style.top = "0px";
+    controls.style.display = "inline-block";
+    controls.style.float = "right";
+    controls.style.color = "white";
+    controls.style.padding = "5px";
+    controls.style.fontSize = "16px";
+    viewportDiv.appendChild(controls);
 
     // particle system
     this.particleGroup = new THREE.Object3D();

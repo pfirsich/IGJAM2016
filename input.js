@@ -24,6 +24,11 @@ function KeyboardController(left, right, up, down, shoot) {
         down = "down";
         shoot = "a";
     }
+    this.leftKey = left;
+    this.rightKey = right;
+    this.upKey = up;
+    this.downKey = down;
+    this.shootKey = shoot;
     this.moveX = Input.getAxisInputFromKeyboard(left, right);
     this.moveY = Input.getAxisInputFromKeyboard(up, down);
     this.shoot = new Input(function() {return keyboard.pressed(shoot) ? 1.0 : 0.0});
