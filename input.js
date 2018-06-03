@@ -98,7 +98,7 @@ function updatePlayerControllers(){
 
 function addgamepad(gamepad) {
     connectedGamepads[gamepad.index] = gamepad;
-    updatePlayerControllers();
+    //updatePlayerControllers();
     console.log("gamepad " + gamepad.index + " connected")
 }
 
